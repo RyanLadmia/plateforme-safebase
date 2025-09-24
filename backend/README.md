@@ -4,6 +4,8 @@
 Go and Gin
 PostgreSQl and pgAdmin
 
+Pour utiliser le terminal, toutjours être dans le dossier backend !!
+
 ## Initialisation :
 Go mod:
 `bash
@@ -48,3 +50,15 @@ Verify air version (computer terminal) :
 `bash
 air -v
 `
+
+Initialize air :
+`bash
+air init
+`
+Crée un fichier de config .air.toml à la racine de backend
+
+## Lancer le serveur :
+`bash
+air
+`
+On n'utilise plus go run main.go
