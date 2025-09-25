@@ -18,9 +18,9 @@ func ConnectPostgres(cfg *config.Config) *gorm.DB {
 
 	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Erreur lors de la connexion à la base de données : %v", err)
+		log.Fatalf(config.Red+"Error connecting to PostgreSQL : %v"+config.Reset, err)
 	}
 
-	log.Println("Connexion à la base de données réussie")
+	log.Println(config.Green + "Connection to Database successfully established" + config.Reset)
 	return db
 }
