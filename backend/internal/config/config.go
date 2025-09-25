@@ -18,6 +18,7 @@ type Config struct {
 	DB_NAME     string
 }
 
+// Loading config from .env file
 func loadConfig() *Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println(" .env non trouvé, on utilise les variables système")
