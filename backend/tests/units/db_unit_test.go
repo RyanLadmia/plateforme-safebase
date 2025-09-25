@@ -13,14 +13,14 @@ func TestUnit_MockDB(t *testing.T) {
 	// On utilise SQLite en mémoire pour simuler une DB
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
-		t.Fatalf("Échec de connexion à la DB mock: %v", err)
-		fmt.Printf("Échec de connexion à la DB mock: %v", err)
+		t.Fatalf("Échec de connexion à la DB mock: %v\n", err)
+		fmt.Printf("Échec de connexion à la DB mock: %v\n", err)
 	}
 
 	// Vérifie que la DB n'est pas nil
 	if db == nil {
-		t.Fatal("La connexion DB mock est nil")
-		fmt.Printf("La connexion DB mock est nil")
+		t.Fatal("La connexion DB mock est nil\n")
+		fmt.Printf("La connexion DB mock est nil\n")
 	}
-	fmt.Printf("Connexion à la DB mock réussie")
+	fmt.Printf("Connexion à la DB mock réussie\n")
 }
