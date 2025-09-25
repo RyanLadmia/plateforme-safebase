@@ -14,7 +14,7 @@ import (
 func TestIntegration_ConnectPostgres(t *testing.T) {
 	// Load .env file
 	if err := godotenv.Load("../../.env"); err != nil {
-		t.Fatalf("Failed to load .env file: %v", err)
+		t.Fatalf("Failed to load .env file: %v\n", err)
 	}
 
 	// Read environment variables
@@ -33,21 +33,21 @@ func TestIntegration_ConnectPostgres(t *testing.T) {
 	// Connect to PostgreSQL
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		t.Fatalf("Failed to connect to PostgreSQL: %v", err)
-		fmt.Printf("Failed to connect to PostgreSQL: %v", err)
+		t.Fatalf("Failed to connect to PostgreSQL: %v\n", err)
+		fmt.Printf("Failed to connect to PostgreSQL: %v\n", err)
 	}
 
 	// Check connection
 	sqlDB, err := db.DB()
 	if err != nil {
-		t.Fatalf("Failed to get SQL DB: %v", err)
-		fmt.Printf("Failed to get SQL DB: %v", err)
+		t.Fatalf("Failed to get SQL DB: %v\n", err)
+		fmt.Printf("Failed to get SQL DB: %v\n", err)
 	}
 	defer sqlDB.Close()
 
 	if err := sqlDB.Ping(); err != nil {
-		t.Fatalf("Failed to ping PostgreSQL DB: %v", err)
-		fmt.Printf("Failed to ping PostgreSQL DB: %v", err)
+		t.Fatalf("Failed to ping PostgreSQL DB: %v\n", err)
+		fmt.Printf("Failed to ping PostgreSQL DB: %v\n", err)
 	}
-	fmt.Printf("Connected to PostgreSQL DB")
+	fmt.Printf("Connected to PostgreSQL DB\n")
 }
