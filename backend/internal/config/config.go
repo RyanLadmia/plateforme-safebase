@@ -18,10 +18,22 @@ type Config struct {
 	DB_NAME     string
 }
 
+// ANSI color codes
+const (
+	Red     = "\033[31m"
+	Green   = "\033[32m"
+	Yellow  = "\033[33m"
+	Blue    = "\033[34m"
+	Magenta = "\033[35m"
+	Cyan    = "\033[36m"
+	White   = "\033[37m"
+	Reset   = "\033[0m"
+)
+
 // Loading config from .env file
-func loadConfig() *Config {
+func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil {
-		log.Println(" .env non trouvé, on utilise les variables système")
+		log.Println(Red + " .env not found, using system variables" + Reset)
 	}
 
 	return &Config{
