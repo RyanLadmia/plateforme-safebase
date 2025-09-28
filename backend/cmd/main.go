@@ -17,6 +17,9 @@ func main() {
 	database := db.ConnectPostgres(cfg)
 	_ = database // To avoid linter error
 
+	// Seed roles
+	db.SeedRoles(database)
+
 	// Gin server
 	gin.SetMode(gin.ReleaseMode)
 	server := gin.Default()
