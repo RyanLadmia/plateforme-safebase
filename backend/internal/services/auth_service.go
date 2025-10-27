@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"regexp"
 	"time"
 
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
@@ -28,8 +29,35 @@ func NewAuthService(userRepo *repositories.UserRepository, sessionRepo *reposito
 	}
 }
 
+// ValidatePassword vérifie le mot de passe selon les règles
+func ValidatePassword(password string) error {
+	if len(password) < 10 {
+		return errors.New("password must be at least 10 characters")
+	}
+	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
+	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password)
+	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
+	hasSpecial := regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(password)
+
+	if !hasUpper || !hasLower || !hasNumber || !hasSpecial {
+		return errors.New("password must include uppercase, lowercase, number, and special character")
+	}
+	return nil
+}
+
 // Register crée un nouvel utilisateur et lui assigne le rôle "user" par défaut
 func (s *AuthService) Register(user *models.User) error {
+	// Vérifier que l'email n'existe pas
+	existingUser, _ := s.userRepo.GetUserByEmail(user.Email)
+	if existingUser != nil {
+		return errors.New("email invalid")
+	}
+
+	// Vérification mot de passe
+	if err := ValidatePassword(user.Password); err != nil {
+		return err
+	}
+
 	// Hash du mot de passe
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
