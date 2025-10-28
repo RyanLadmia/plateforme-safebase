@@ -19,7 +19,7 @@ type User struct {
 	RoleID    *uint          `gorm:"index;default:2" json:"role_id"`
 	Role      *Role          `gorm:"foreignKey:RoleID" json:"role,omitempty"` // Not shown in JSON response if RoleID is null
 	Sessions  []Session      `gorm:"constraint:OnDelete:CASCADE;" json:"sessions,omitempty"`
-	// TODO: Ajouter plus tard quand les autres modèles seront finalisés
+	// Add other models later when the relationships are finalized
 	// Backups   []Backup       `gorm:"constraint:OnDelete:CASCADE;" json:"backups,omitempty"`
 	// Restores  []Restore      `gorm:"constraint:OnDelete:CASCADE;" json:"restores,omitempty"`
 	// Alerts    []Alert        `gorm:"constraint:OnDelete:CASCADE;" json:"alerts,omitempty"`

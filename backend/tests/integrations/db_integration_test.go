@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// TestIntegration_ConnectPostgres connects to the real PostgreSQL database using .env
+// TestIntegration_ConnectPostgres : connects to the real PostgreSQL database using .env
 func TestIntegration_ConnectPostgres(t *testing.T) {
 	// Load .env file
 	if err := godotenv.Load("../../.env"); err != nil {

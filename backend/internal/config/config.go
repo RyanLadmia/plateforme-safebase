@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Structure of the configuration
 type Config struct {
 	PORT        string
 	JWT_SECRET  string
@@ -18,7 +19,7 @@ type Config struct {
 	DB_NAME     string
 }
 
-// ANSI color codes
+// ANSI color codes for console output
 const (
 	Red     = "\033[31m"
 	Green   = "\033[32m"
@@ -30,7 +31,7 @@ const (
 	Reset   = "\033[0m"
 )
 
-// Loading config from .env file
+// Load config from .env file and return a Config struct
 func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println(Red + " .env not found, using system variables" + Reset)

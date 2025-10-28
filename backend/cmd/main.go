@@ -16,67 +16,69 @@ import (
 )
 
 func main() {
-	// Chargement de la configuration depuis les variables d'environnement
+	// Load config from environment variables
 	cfg := config.LoadConfig()
 
-	// Connexion à PostgreSQL
+	// Connection to PostgreSQL database
 	database := db.ConnectPostgres(cfg)
 
-	// Migration automatique des tables (création/mise à jour des structures)
-	// Pour l'instant, nous migrons seulement les modèles nécessaires à l'authentification
+	// Automatic migration of tables (creation/update of structures)
+	// For now, we only migrate the models necessary for authentication
 	log.Println(config.Yellow + "Running database migrations..." + config.Reset)
 	if err := database.AutoMigrate(
-		&models.Role{},    // Table des rôles
-		&models.User{},    // Table des utilisateurs
-		&models.Session{}, // Table des sessions
+		&models.Role{},    // Role table
+		&models.User{},    // User table
+		&models.Session{}, // Session table
 	); err != nil {
 		log.Fatalf(config.Red+"Failed to migrate database: %v"+config.Reset, err)
 	}
 
-	// TODO: Ajouter plus tard les autres modèles quand les relations seront finalisées
-	// &models.Alert{},   // Table des alertes (pour plus tard)
-	// &models.Database{}, // Table des bases de données (pour plus tard)
-	// &models.Backup{},  // Table des sauvegardes (pour plus tard)
-	// &models.Restore{}, // Table des restaurations (pour plus tard)
+	// Add other models later when the relationships are finalized
+	// &models.Alert{},   // Alert table (for later)
+	// &models.Database{}, // Database table (for later)
+	// &models.Backup{},  // Backup table (for later)
+	// &models.Restore{}, // Restore table (for later)
 	log.Println(config.Green + "Database migrations completed successfully" + config.Reset)
 
-	// Initialisation des rôles par défaut (admin, user)
+	// Initialize default roles (admin, user)
 	db.SeedRoles(database)
 
-	// Initialisation des repositories (couche d'accès aux données)
+	// Initialize repositories (data access layer)
 	userRepo := repositories.NewUserRepository(database)
 	sessionRepo := repositories.NewSessionRepository(database)
 
-	// Initialisation des services (logique métier)
+	// Initialize services (business logic)
 	authService := services.NewAuthService(
 		userRepo,
 		sessionRepo,
-		cfg.JWT_SECRET, // Clé secrète pour signer les JWT
-		24*time.Hour,   // Durée de validité des tokens (24h)
+		cfg.JWT_SECRET, // Secret key to sign JWT tokens
+		24*time.Hour,   // Token validity duration (24h)
 	)
 
-	// Initialisation des handlers (contrôleurs HTTP)
+	// Initialize handlers (HTTP controllers)
 	authHandler := handlers.NewAuthHandler(authService)
 
-	// Configuration du serveur Gin
+	// Configure the Gin server
 	gin.SetMode(gin.ReleaseMode)
 	server := gin.Default()
 	server.SetTrustedProxies([]string{"127.0.0.1"})
 
-	// Middleware CORS sécurisé pour permettre les cookies
+	// Secure CORS middleware to allow cookies
 	server.Use(func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 
-		// Autoriser les origines de développement et production
+		// Allow development and production origins
 		allowedOrigins := []string{
-			"http://localhost:5173",      // Vite dev server
-			"http://localhost:3000",      // Alternative dev port
-			"http://127.0.0.1:5173",      // Alternative localhost
-			"https://yourdomain.com",     // TODO: Remplacer par votre domaine de production
-			"https://www.yourdomain.com", // TODO: Remplacer par votre domaine de production
+			"http://localhost:5173", // Vite dev server (frontend)
+			"http://127.0.0.1:5173", // Alternative localhost (frontend)
+
+			"http://localhost:3000", // Go dev server port (backend)
+			"http://127.0.0.1:3000", // Alternative localhost (backend)
+
+			// Replace with your production domain (backend and frontend if separated)
 		}
 
-		// Vérifier si l'origine est autorisée
+		// Check if the origin is allowed
 		isAllowed := false
 		for _, allowedOrigin := range allowedOrigins {
 			if origin == allowedOrigin {
@@ -102,18 +104,18 @@ func main() {
 		c.Next()
 	})
 
-	// Route de test pour vérifier que le serveur fonctionne
+	// Test route to check if the server is running
 	server.GET("/test", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Safebase API is running!"})
 	})
 
-	// Intégration des routes d'authentification (/auth/register, /auth/login, /auth/logout)
+	// Integration of authentication routes (/auth/register, /auth/login, /auth/logout)
 	routes.AuthRoutes(server, authHandler, cfg.JWT_SECRET)
 
-	// Démarrage du serveur
+	// Start the server
 	port := cfg.PORT
 	if port == "" {
-		port = "8080"
+		port = "3000"
 	}
 	fmt.Printf(config.Green+"🚀 Server running on port %s\n", port+config.Reset)
 	fmt.Printf(config.Cyan + "📋 Available endpoints:\n")

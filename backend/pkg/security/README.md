@@ -7,3 +7,5 @@ go get golang.org/x/crypto/bcrypt
 `
 go get github.com/golang-jwt/jwt/v5
 `
+
+Vérifier dans le fichier go.mod qu'ils ont bien été ajoutés.

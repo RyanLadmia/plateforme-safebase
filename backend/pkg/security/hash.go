@@ -19,6 +19,7 @@ func HashPassword(password string) (string, error) {
 }
 
 // CheckPassword : to check if a password is correct
+// plainPassword is the password that the user entered (visible in the input field not in database)
 func CheckPassword(hashedPassword, plainPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
 	return err == nil // true = password is correct

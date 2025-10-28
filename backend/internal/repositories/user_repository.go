@@ -15,7 +15,7 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-// GetDB retourne l'instance de la base de données (pour les requêtes complexes)
+// GetDB return the database connection (for complex queries)
 func (r *UserRepository) GetDB() *gorm.DB {
 	return r.db
 }
