@@ -2,12 +2,14 @@ package services
 
 import (
 	"errors"
+	"log"
 	"regexp"
 	"time"
 
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
 	"github.com/RyanLadmia/plateforme-safebase/internal/repositories"
 	"github.com/RyanLadmia/plateforme-safebase/pkg/security"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -67,12 +69,22 @@ func (s *AuthService) Register(user *models.User) error {
 
 	// Assignation automatique du rôle user si non précisé
 	if user.RoleID == nil {
-		defaultRoleID := uint(2) // correspond au rôle user seedé
-		user.RoleID = &defaultRoleID
+		// Récupère l'ID du rôle "user" depuis la base de données
+		var userRole models.Role
+		if err := s.userRepo.GetDB().Where("name = ?", "user").First(&userRole).Error; err != nil {
+			return errors.New("default user role not found")
+		}
+		user.RoleID = &userRole.Id
 	}
 
 	// Création en DB
-	return s.userRepo.CreateUser(user)
+	log.Printf("Tentative de création de l'utilisateur en base de données...")
+	if err := s.userRepo.CreateUser(user); err != nil {
+		log.Printf("Erreur lors de la création en DB: %v", err)
+		return err
+	}
+	log.Printf("Utilisateur créé en DB avec l'ID: %d", user.Id)
+	return nil
 }
 
 // Login vérifie les identifiants et crée une session avec token JWT
@@ -104,6 +116,39 @@ func (s *AuthService) Login(email, password string) (string, error) {
 	}
 
 	return token, nil
+}
+
+// GetUserFromToken récupère un utilisateur à partir d'un token JWT
+func (s *AuthService) GetUserFromToken(tokenString string) (*models.User, error) {
+	// Parse et valide le token
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(s.jwtSecret), nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	// Extraire les claims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid token claims")
+	}
+
+	// Récupérer l'ID utilisateur depuis les claims
+	userIDFloat, ok := claims["user_id"].(float64)
+	if !ok {
+		return nil, errors.New("invalid user_id in token")
+	}
+	userID := uint(userIDFloat)
+
+	// Récupérer l'utilisateur depuis la base de données
+	user, err := s.userRepo.GetUserById(userID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	return user, nil
 }
 
 // Logout supprime la session associée au token pour déconnecter l'utilisateur
