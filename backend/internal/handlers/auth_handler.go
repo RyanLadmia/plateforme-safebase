@@ -176,3 +176,17 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 		},
 	})
 }
+
+// GetSessionsStats endpoint: GET /auth/sessions/stats (pour monitoring)
+func (h *AuthHandler) GetSessionsStats(c *gin.Context) {
+	count, err := h.authService.GetActiveSessionsCount()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get sessions count"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"active_sessions": count,
+		"timestamp":       time.Now().Unix(),
+	})
+}

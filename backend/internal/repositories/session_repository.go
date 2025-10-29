@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"log"
 	"time"
 
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
@@ -33,23 +34,41 @@ func (r *SessionRepository) GetSessionByToken(token string) (*models.Session, er
 	return &session, nil
 }
 
-// DeleteByToken supprime une session par son token (utilisé pour la déconnexion)
+// DeleteByToken supprime physiquement une session par son token (utilisé pour la déconnexion)
 func (r *SessionRepository) DeleteByToken(token string) error {
 	// Extrait le token du format "Bearer <token>" si nécessaire
 	if len(token) > 7 && token[:7] == "Bearer " {
 		token = token[7:]
 	}
-	return r.db.Where("token = ?", token).Delete(&models.Session{}).Error
+	// Suppression physique directe (plus de soft delete)
+	result := r.db.Unscoped().Where("token = ?", token).Delete(&models.Session{})
+	if result.Error != nil {
+		return result.Error
+	}
+	log.Printf("🗑️ Sessions supprimées physiquement: %d", result.RowsAffected)
+	return nil
 }
 
-// DeleteByUserId supprime toutes les sessions d'un utilisateur
+// DeleteByUserId supprime physiquement toutes les sessions d'un utilisateur
 func (r *SessionRepository) DeleteByUserId(userId uint) error {
-	return r.db.Where("user_id = ?", userId).Delete(&models.Session{}).Error
+	// Suppression physique directe (plus de soft delete)
+	result := r.db.Unscoped().Where("user_id = ?", userId).Delete(&models.Session{})
+	if result.Error != nil {
+		return result.Error
+	}
+	log.Printf("🗑️ Sessions utilisateur %d supprimées physiquement: %d", userId, result.RowsAffected)
+	return nil
 }
 
-// DeleteExpiredSessions supprime toutes les sessions expirées (à appeler périodiquement)
+// DeleteExpiredSessions supprime physiquement toutes les sessions expirées (à appeler périodiquement)
 func (r *SessionRepository) DeleteExpiredSessions() error {
-	return r.db.Where("expires_at < ?", time.Now()).Delete(&models.Session{}).Error
+	// Suppression physique directe (plus de soft delete)
+	result := r.db.Unscoped().Where("expires_at < ?", time.Now()).Delete(&models.Session{})
+	if result.Error != nil {
+		return result.Error
+	}
+	log.Printf("🗑️ Sessions expirées supprimées physiquement: %d", result.RowsAffected)
+	return nil
 }
 
 // GetActiveSessionsForUser récupère toutes les sessions actives d'un utilisateur
@@ -65,4 +84,15 @@ func (r *SessionRepository) GetActiveSessionsForUser(userId uint) ([]models.Sess
 // FindByToken alias pour la compatibilité (utilise GetSessionByToken)
 func (r *SessionRepository) FindByToken(token string) (*models.Session, error) {
 	return r.GetSessionByToken(token)
+}
+
+// GetActiveSessionsCount retourne le nombre de sessions actives
+func (r *SessionRepository) GetActiveSessionsCount() (int64, error) {
+	var count int64
+	if err := r.db.Model(&models.Session{}).
+		Where("expires_at > ?", time.Now()).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }

@@ -12,5 +12,6 @@ func AuthRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, jwtSecret
 		auth.POST("/login", authHandler.Login)
 		auth.POST("/logout", authHandler.Logout)
 		auth.GET("/me", authHandler.GetCurrentUser)
+		auth.GET("/sessions/stats", authHandler.GetSessionsStats) // Monitoring
 	}
 }
