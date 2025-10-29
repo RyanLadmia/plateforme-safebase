@@ -25,6 +25,17 @@ func main() {
 	// Automatic migration of tables (creation/update of structures)
 	// For now, we only migrate the models necessary for authentication
 	log.Println(config.Yellow + "Running database migrations..." + config.Reset)
+
+	// Migration spéciale pour supprimer la colonne deleted_at de la table sessions
+	log.Println(config.Yellow + "Removing deleted_at column from sessions table..." + config.Reset)
+	if database.Migrator().HasColumn(&models.Session{}, "deleted_at") {
+		if err := database.Migrator().DropColumn(&models.Session{}, "deleted_at"); err != nil {
+			log.Printf(config.Yellow+"Warning: Could not drop deleted_at column: %v"+config.Reset, err)
+		} else {
+			log.Println(config.Green + "deleted_at column removed from sessions table" + config.Reset)
+		}
+	}
+
 	if err := database.AutoMigrate(
 		&models.Role{},    // Role table
 		&models.User{},    // User table
@@ -54,6 +65,17 @@ func main() {
 		cfg.JWT_SECRET, // Secret key to sign JWT tokens
 		24*time.Hour,   // Token validity duration (24h)
 	)
+
+	// Nettoyage initial des sessions expirées au démarrage
+	log.Println(config.Yellow + "Nettoyage des sessions expirées..." + config.Reset)
+	if err := authService.CleanupExpiredSessions(); err != nil {
+		log.Printf(config.Yellow+"Avertissement: %v"+config.Reset, err)
+	}
+
+	// Afficher le nombre de sessions actives
+	if count, err := authService.GetActiveSessionsCount(); err == nil {
+		log.Printf(config.Green+"Sessions actives: %d"+config.Reset, count)
+	}
 
 	// Initialize handlers (HTTP controllers)
 	authHandler := handlers.NewAuthHandler(authService)

@@ -99,6 +99,16 @@ func (s *AuthService) Login(email, password string) (string, error) {
 		return "", errors.New("invalid email or password")
 	}
 
+	// OPTIMISATION 1: Nettoyer les sessions expirées avant de créer une nouvelle
+	if err := s.sessionRepo.DeleteExpiredSessions(); err != nil {
+		log.Printf("Avertissement: Impossible de nettoyer les sessions expirées: %v", err)
+	}
+
+	// OPTIMISATION 2: Supprimer les anciennes sessions de cet utilisateur (une seule session active par utilisateur)
+	if err := s.sessionRepo.DeleteByUserId(user.Id); err != nil {
+		log.Printf("Avertissement: Impossible de supprimer les anciennes sessions: %v", err)
+	}
+
 	// Generate JWT token
 	token, err := security.GenerateJWT(s.jwtSecret, user.Id, user.Email, user.Role.Name, s.tokenTTL)
 	if err != nil {
@@ -115,6 +125,7 @@ func (s *AuthService) Login(email, password string) (string, error) {
 		return "", err
 	}
 
+	log.Printf("Session créée pour l'utilisateur %d, token: %s...", user.Id, token[:10])
 	return token, nil
 }
 
@@ -153,6 +164,40 @@ func (s *AuthService) GetUserFromToken(tokenString string) (*models.User, error)
 
 // Logout delete the session associated with the token to disconnect the user
 func (s *AuthService) Logout(token string) error {
-	// Delete the session in DB (blacklist the token)
-	return s.sessionRepo.DeleteByToken(token)
+	// Extraire le token du format "Bearer <token>" si nécessaire
+	cleanToken := token
+	if len(token) > 7 && token[:7] == "Bearer " {
+		cleanToken = token[7:]
+	}
+
+	// Vérifier que la session existe avant de la supprimer
+	session, err := s.sessionRepo.GetSessionByToken(cleanToken)
+	if err != nil {
+		log.Printf("Session non trouvée pour la déconnexion: %v", err)
+		return errors.New("session not found")
+	}
+
+	// Supprimer la session spécifique
+	if err := s.sessionRepo.DeleteByToken(token); err != nil {
+		log.Printf("Erreur lors de la suppression de la session: %v", err)
+		return err
+	}
+
+	log.Printf("Session supprimée pour l'utilisateur %d", session.UserId)
+	return nil
+}
+
+// CleanupExpiredSessions nettoie périodiquement les sessions expirées
+func (s *AuthService) CleanupExpiredSessions() error {
+	if err := s.sessionRepo.DeleteExpiredSessions(); err != nil {
+		log.Printf("Erreur lors du nettoyage des sessions expirées: %v", err)
+		return err
+	}
+	log.Printf("Nettoyage des sessions expirées effectué")
+	return nil
+}
+
+// GetActiveSessionsCount retourne le nombre de sessions actives (pour monitoring)
+func (s *AuthService) GetActiveSessionsCount() (int64, error) {
+	return s.sessionRepo.GetActiveSessionsCount()
 }
