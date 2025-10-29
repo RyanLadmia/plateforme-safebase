@@ -1,1 +1,4 @@
 .env
+
+# Fichiers temporaires générés par air
+backend/cmd/tmp/
