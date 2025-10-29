@@ -15,6 +15,11 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
+// GetDB return the database connection (for complex queries)
+func (r *UserRepository) GetDB() *gorm.DB {
+	return r.db
+}
+
 // Create a new user
 func (r *UserRepository) CreateUser(user *models.User) error {
 	return r.db.Create(user).Error

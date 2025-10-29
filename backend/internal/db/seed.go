@@ -7,11 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-// SeedRoles : assure que les rôles par défaut existent
+// SeedRoles : ensure that the default roles exist
 func SeedRoles(db *gorm.DB) {
 	var count int64
 
-	// Crée le rôle "admin" si il n'existe pas
+	// Create the admin role if it doesn't exist
 	db.Model(&models.Role{}).Where("name = ?", "admin").Count(&count)
 	if count == 0 {
 		if err := db.Create(&models.Role{Name: "admin"}).Error; err != nil {
@@ -19,7 +19,7 @@ func SeedRoles(db *gorm.DB) {
 		}
 	}
 
-	// Crée le rôle "user" si il n'existe pas
+	// Create the user role if it doesn't exist
 	db.Model(&models.Role{}).Where("name = ?", "user").Count(&count)
 	if count == 0 {
 		if err := db.Create(&models.Role{Name: "user"}).Error; err != nil {

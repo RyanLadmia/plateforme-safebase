@@ -15,6 +15,6 @@ type Database struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserId    uint           `gorm:"index;not null" json:"user_id"`
 	User      User           `gorm:"foreignKey:UserId" json:"-"`
-	Backups   []Backup       `gorm:"constraint:OnDelete:CASCADE;" json:"backups,omitempty"`
-	Restores  []Restore      `gorm:"constraint:OnDelete:CASCADE;" json:"restores,omitempty"`
+	Backups   []Backup       `gorm:"foreignKey:DatabaseId;constraint:OnDelete:CASCADE;" json:"backups,omitempty"`
+	Restores  []Restore      `gorm:"foreignKey:DatabaseId;constraint:OnDelete:CASCADE;" json:"restores,omitempty"`
 }
