@@ -175,6 +175,7 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 			"lastname":  user.Lastname,
 			"email":     user.Email,
 			"role_id":   user.RoleID,
+			"role":      user.Role, // CRUCIAL: Inclure le rôle complet pour que le frontend puisse vérifier user.role.name
 		},
 	})
 }
