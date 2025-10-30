@@ -26,16 +26,6 @@ func main() {
 	// For now, we only migrate the models necessary for authentication
 	log.Println(config.Yellow + "Running database migrations..." + config.Reset)
 
-	// Migration spéciale pour supprimer la colonne deleted_at de la table sessions
-	log.Println(config.Yellow + "Removing deleted_at column from sessions table..." + config.Reset)
-	if database.Migrator().HasColumn(&models.Session{}, "deleted_at") {
-		if err := database.Migrator().DropColumn(&models.Session{}, "deleted_at"); err != nil {
-			log.Printf(config.Yellow+"Warning: Could not drop deleted_at column: %v"+config.Reset, err)
-		} else {
-			log.Println(config.Green + "deleted_at column removed from sessions table" + config.Reset)
-		}
-	}
-
 	if err := database.AutoMigrate(
 		&models.Role{},    // Role table
 		&models.User{},    // User table
@@ -139,8 +129,8 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
-	fmt.Printf(config.Green+"🚀 Server running on port %s\n", port+config.Reset)
-	fmt.Printf(config.Cyan + "📋 Available endpoints:\n")
+	fmt.Printf(config.Green+"Server running on port %s\n", port+config.Reset)
+	fmt.Printf(config.Cyan + "Available endpoints:\n")
 	fmt.Printf("   GET  /test            - Test endpoint\n")
 	fmt.Printf("   POST /auth/register   - User registration\n")
 	fmt.Printf("   POST /auth/login      - User login\n")

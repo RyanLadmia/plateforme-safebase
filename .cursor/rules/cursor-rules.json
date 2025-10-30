@@ -1,0 +1,19 @@
+{
+    "projectType": "web",
+    "language": "go",
+    "style": {
+      "framework": "tailwind",
+      "componentStyle": "function"
+    },
+    "constraints": [
+      "use Gitbash for terminal",
+      "server backend is running on port 8080",
+      "server frontend is running on port 5173",
+      "i don't want my server url in the code, i want to use VITE_API_BASE_URL for frontend and PORT for backend in back\\.env and VITE_APP_URL for frontend in front\\.env",
+      "don't modify or delete .gitignore file",
+      "always give me an clear explaination of the code you write or you modify"
+    ],
+    "notes": {
+      "Terminal": "don't use any emoji in the terminal, use only text"
+    }
+  }

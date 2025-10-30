@@ -6,6 +6,8 @@ import (
 
 	"github.com/RyanLadmia/plateforme-safebase/internal/config"
 	"gorm.io/driver/postgres"
+
+	// "github.com/go-sql-driver/mysql" // Pour MySQL
 	"gorm.io/gorm"
 )
 
