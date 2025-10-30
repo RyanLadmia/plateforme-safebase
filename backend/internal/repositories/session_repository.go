@@ -45,7 +45,7 @@ func (r *SessionRepository) DeleteByToken(token string) error {
 	if result.Error != nil {
 		return result.Error
 	}
-	log.Printf("🗑️ Sessions supprimées physiquement: %d", result.RowsAffected)
+	log.Printf("Sessions supprimées physiquement: %d", result.RowsAffected)
 	return nil
 }
 
@@ -56,7 +56,7 @@ func (r *SessionRepository) DeleteByUserId(userId uint) error {
 	if result.Error != nil {
 		return result.Error
 	}
-	log.Printf("🗑️ Sessions utilisateur %d supprimées physiquement: %d", userId, result.RowsAffected)
+	log.Printf("Sessions utilisateur %d supprimées physiquement: %d", userId, result.RowsAffected)
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (r *SessionRepository) DeleteExpiredSessions() error {
 	if result.Error != nil {
 		return result.Error
 	}
-	log.Printf("🗑️ Sessions expirées supprimées physiquement: %d", result.RowsAffected)
+	log.Printf("Sessions expirées supprimées physiquement: %d", result.RowsAffected)
 	return nil
 }
 
