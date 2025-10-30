@@ -157,6 +157,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSafebaseStore } from '@/stores/safebase'
@@ -166,11 +167,11 @@ const router = useRouter()
 const authStore = useAuthStore()
 const safebaseStore = useSafebaseStore()
 
-const { user } = authStore
-const { databaseCount, backupCount, backups, pendingBackups, loading } = safebaseStore
+const { user } = storeToRefs(authStore)
+const { databaseCount, backupCount, backups, pendingBackups, loading } = storeToRefs(safebaseStore)
 
 const recentBackups = computed(() => {
-  return backupService.sortByDate(backups).slice(0, 10)
+  return backupService.sortByDate(backups.value).slice(0, 10)
 })
 
 const handleLogout = async () => {

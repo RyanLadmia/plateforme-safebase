@@ -240,14 +240,15 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import { useSafebaseStore } from '@/stores/safebase'
 
 const authStore = useAuthStore()
 const safebaseStore = useSafebaseStore()
 
-const { user } = authStore
-const { databaseCount, backupCount, completedBackups } = safebaseStore
+const { user } = storeToRefs(authStore)
+const { databaseCount, backupCount, completedBackups } = storeToRefs(safebaseStore)
 
 const isEditing = ref(false)
 const loading = ref(false)
@@ -283,10 +284,10 @@ const startEditing = () => {
 const cancelEditing = () => {
   isEditing.value = false
   // Restaurer les données originales
-  if (user) {
-    profileData.firstname = user.firstname
-    profileData.lastname = user.lastname
-    profileData.email = user.email
+  if (user.value) {
+    profileData.firstname = user.value.firstname
+    profileData.lastname = user.value.lastname
+    profileData.email = user.value.email
   }
   successMessage.value = ''
   errorMessage.value = ''
@@ -361,7 +362,7 @@ const changePassword = async () => {
 }
 
 const getRoleLabel = (): string => {
-  const roleName = user?.role?.name
+  const roleName = user.value?.role?.name
   if (roleName === 'admin') return 'Administrateur'
   if (roleName === 'user') return 'Utilisateur'
   return roleName || 'Non défini'
@@ -369,10 +370,10 @@ const getRoleLabel = (): string => {
 
 onMounted(() => {
   // Initialiser les données du profil
-  if (user) {
-    profileData.firstname = user.firstname
-    profileData.lastname = user.lastname
-    profileData.email = user.email
+  if (user.value) {
+    profileData.firstname = user.value.firstname
+    profileData.lastname = user.value.lastname
+    profileData.email = user.value.email
   }
 
   // Charger les statistiques

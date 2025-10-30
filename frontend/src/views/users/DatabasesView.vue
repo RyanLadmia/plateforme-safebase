@@ -123,13 +123,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useSafebaseStore } from '@/stores/safebase'
 import { databaseService } from '@/services/database_service'
 import { backupService } from '@/services/backup_service'
 import type { DatabaseCreateRequest } from '@/types/database'
 
 const safebaseStore = useSafebaseStore()
-const { databases, loading, error } = safebaseStore
+const { databases, loading, error } = storeToRefs(safebaseStore)
 
 const showCreateModal = ref(false)
 const formLoading = ref(false)

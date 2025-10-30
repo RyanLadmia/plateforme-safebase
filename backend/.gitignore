@@ -3,3 +3,5 @@
 # Fichiers temporaires générés par air
 cmd/tmp/
 main
+
+db/

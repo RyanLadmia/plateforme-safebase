@@ -121,18 +121,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useSafebaseStore } from '@/stores/safebase'
 import { backupService } from '@/services/backup_service'
 import type { Backup } from '@/types/backup'
 
 const safebaseStore = useSafebaseStore()
-const { backups, loading, error, completedBackups, pendingBackups, failedBackups } = safebaseStore
+const { backups, loading, error, completedBackups, pendingBackups, failedBackups } = storeToRefs(safebaseStore)
 
 const filterStatus = ref<string | null>(null)
 
 const filteredBackups = computed(() => {
-  if (!filterStatus.value) return backupService.sortByDate(backups)
-  return backupService.sortByDate(backupService.filterByStatus(backups, filterStatus.value))
+  if (!filterStatus.value) return backupService.sortByDate(backups.value)
+  return backupService.sortByDate(backupService.filterByStatus(backups.value, filterStatus.value))
 })
 
 const formatDate = (dateString: string): string => {
@@ -150,7 +151,7 @@ const formatSize = (bytes: number): string => {
 }
 
 const formatTotalSize = (): string => {
-  const total = backupService.getTotalSize(backups)
+  const total = backupService.getTotalSize(backups.value)
   return backupService.formatFileSize(total)
 }
 
