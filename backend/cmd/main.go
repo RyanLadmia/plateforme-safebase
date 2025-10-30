@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
+	"path/filepath"
 	"time"
 
 	"github.com/RyanLadmia/plateforme-safebase/internal/config"
 	"github.com/RyanLadmia/plateforme-safebase/internal/db"
 	"github.com/RyanLadmia/plateforme-safebase/internal/handlers"
+	"github.com/RyanLadmia/plateforme-safebase/internal/middlewares"
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
 	"github.com/RyanLadmia/plateforme-safebase/internal/repositories"
 	"github.com/RyanLadmia/plateforme-safebase/internal/routes"
@@ -27,18 +29,16 @@ func main() {
 	log.Println(config.Yellow + "Running database migrations..." + config.Reset)
 
 	if err := database.AutoMigrate(
-		&models.Role{},    // Role table
-		&models.User{},    // User table
-		&models.Session{}, // Session table
+		&models.Role{},     // Role table
+		&models.User{},     // User table
+		&models.Session{},  // Session table
+		&models.Database{}, // Database table
+		&models.Backup{},   // Backup table
+		// &models.Alert{},   // Alert table (for later)
+		// &models.Restore{}, // Restore table (for later)
 	); err != nil {
 		log.Fatalf(config.Red+"Failed to migrate database: %v"+config.Reset, err)
 	}
-
-	// Add other models later when the relationships are finalized
-	// &models.Alert{},   // Alert table (for later)
-	// &models.Database{}, // Database table (for later)
-	// &models.Backup{},  // Backup table (for later)
-	// &models.Restore{}, // Restore table (for later)
 	log.Println(config.Green + "Database migrations completed successfully" + config.Reset)
 
 	// Initialize default roles (admin, user)
@@ -47,6 +47,8 @@ func main() {
 	// Initialize repositories (data access layer)
 	userRepo := repositories.NewUserRepository(database)
 	sessionRepo := repositories.NewSessionRepository(database)
+	databaseRepo := repositories.NewDatabaseRepository(database)
+	backupRepo := repositories.NewBackupRepository(database)
 
 	// Initialize services (business logic)
 	authService := services.NewAuthService(
@@ -55,6 +57,11 @@ func main() {
 		cfg.JWT_SECRET, // Secret key to sign JWT tokens
 		24*time.Hour,   // Token validity duration (24h)
 	)
+
+	// Initialize backup service with backup directory
+	backupDir := filepath.Join(".", "db", "backups")
+	backupService := services.NewBackupService(backupRepo, databaseRepo, backupDir)
+	databaseService := services.NewDatabaseService(databaseRepo)
 
 	// Nettoyage initial des sessions expirées au démarrage
 	log.Println(config.Yellow + "Nettoyage des sessions expirées..." + config.Reset)
@@ -69,6 +76,11 @@ func main() {
 
 	// Initialize handlers (HTTP controllers)
 	authHandler := handlers.NewAuthHandler(authService)
+	databaseHandler := handlers.NewDatabaseHandler(databaseService)
+	backupHandler := handlers.NewBackupHandler(backupService)
+
+	// Initialize middleware
+	authMiddleware := middlewares.NewAuthMiddleware(cfg.JWT_SECRET)
 
 	// Configure the Gin server
 	gin.SetMode(gin.ReleaseMode)
@@ -124,6 +136,10 @@ func main() {
 	// Integration of authentication routes (/auth/register, /auth/login, /auth/logout)
 	routes.AuthRoutes(server, authHandler, cfg.JWT_SECRET)
 
+	// Integration of database and backup routes
+	routes.SetupDatabaseRoutes(server, databaseHandler, authMiddleware)
+	routes.SetupBackupRoutes(server, backupHandler, authMiddleware)
+
 	// Start the server
 	port := cfg.PORT
 	if port == "" {
@@ -131,11 +147,21 @@ func main() {
 	}
 	fmt.Printf(config.Green+"Server running on port %s\n", port+config.Reset)
 	fmt.Printf(config.Cyan + "Available endpoints:\n")
-	fmt.Printf("   GET  /test            - Test endpoint\n")
-	fmt.Printf("   POST /auth/register   - User registration\n")
-	fmt.Printf("   POST /auth/login      - User login\n")
-	fmt.Printf("   POST /auth/logout     - User logout\n")
-	fmt.Printf("   GET  /auth/me         - Get current user\n" + config.Reset)
+	fmt.Printf("   GET  /test                              - Test endpoint\n")
+	fmt.Printf("   POST /auth/register                     - User registration\n")
+	fmt.Printf("   POST /auth/login                        - User login\n")
+	fmt.Printf("   POST /auth/logout                       - User logout\n")
+	fmt.Printf("   GET  /auth/me                           - Get current user\n")
+	fmt.Printf("   POST /api/databases                     - Create database\n")
+	fmt.Printf("   GET  /api/databases                     - Get user databases\n")
+	fmt.Printf("   GET  /api/databases/:id                 - Get database by ID\n")
+	fmt.Printf("   PUT  /api/databases/:id                 - Update database\n")
+	fmt.Printf("   DELETE /api/databases/:id               - Delete database\n")
+	fmt.Printf("   POST /api/backups/database/:database_id - Create backup\n")
+	fmt.Printf("   GET  /api/backups                       - Get user backups\n")
+	fmt.Printf("   GET  /api/backups/:id                   - Get backup by ID\n")
+	fmt.Printf("   GET  /api/backups/:id/download          - Download backup\n")
+	fmt.Printf("   DELETE /api/backups/:id                 - Delete backup\n" + config.Reset)
 
 	if err := server.Run(":" + port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)

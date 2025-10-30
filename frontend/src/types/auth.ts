@@ -1,11 +1,21 @@
 // Types pour l'authentification
 
+export interface Role {
+  id: number
+  name: string
+  created_at: string
+  updated_at: string
+}
+
 export interface User {
   id: number
   firstname: string
   lastname: string
   email: string
   role_id: number
+  role?: Role // Objet role complet du backend
+  created_at: string
+  updated_at: string
 }
 
 export interface LoginRequest {

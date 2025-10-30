@@ -108,15 +108,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Respond with user info (sans le token dans le JSON)
+	// Respond with user info AND token
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Connexion réussie",
+		"token":   token, // Ajout du token dans la réponse
 		"user": gin.H{
 			"id":        user.Id,
 			"firstname": user.Firstname,
 			"lastname":  user.Lastname,
 			"email":     user.Email,
 			"role_id":   user.RoleID,
+			"role":      user.Role, // Inclure le rôle complet
 		},
 	})
 }

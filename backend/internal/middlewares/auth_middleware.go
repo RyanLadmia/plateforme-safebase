@@ -1,4 +1,4 @@
-package middleware
+package middlewares
 
 import (
 	"net/http"
@@ -8,29 +8,50 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware vérifie que le token JWT est présent et valide
-func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
+// AuthMiddleware structure pour encapsuler le middleware d'authentification
+type AuthMiddleware struct {
+	jwtSecret string
+}
+
+// NewAuthMiddleware crée une nouvelle instance d'AuthMiddleware
+func NewAuthMiddleware(jwtSecret string) *AuthMiddleware {
+	return &AuthMiddleware{
+		jwtSecret: jwtSecret,
+	}
+}
+
+// RequireAuth vérifie que le token JWT est présent et valide
+func (am *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Récupère le header Authorization
+		var token string
+
+		// Essayer d'abord de récupérer le token depuis le header Authorization
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header missing"})
+		if authHeader != "" {
+			// Format attendu : "Bearer <token>"
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				token = parts[1]
+			}
+		}
+
+		// Si pas de token dans le header, essayer le cookie HTTP-only (plus sécurisé)
+		if token == "" {
+			cookieToken, err := c.Cookie("auth_token")
+			if err == nil && cookieToken != "" {
+				token = cookieToken
+			}
+		}
+
+		// Si aucun token trouvé
+		if token == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
 			c.Abort()
 			return
 		}
-
-		// Format attendu : "Bearer <token>"
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header format must be Bearer <token>"})
-			c.Abort()
-			return
-		}
-
-		token := parts[1]
 
 		// Vérifie le token
-		claims, err := security.VerifyJWT(jwtSecret, token)
+		claims, err := security.VerifyJWT(am.jwtSecret, token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			c.Abort()
