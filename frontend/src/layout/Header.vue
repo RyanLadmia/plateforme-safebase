@@ -29,7 +29,6 @@
 
             <!-- Lien Bases de données (utilisateurs uniquement) -->
             <RouterLink 
-              v-if="!isAdmin"
               to="/user/databases"
               class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
               active-class="bg-white/30"
@@ -42,7 +41,6 @@
 
             <!-- Lien Sauvegardes (utilisateurs uniquement) -->
             <RouterLink 
-              v-if="!isAdmin"
               to="/user/backups"
               class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
               active-class="bg-white/30"
