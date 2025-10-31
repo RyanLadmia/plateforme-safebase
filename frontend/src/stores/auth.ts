@@ -57,8 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Initialisation : Vérifier l'authentification au chargement
-  checkAuth()
+  // Note: checkAuth() doit être appelée manuellement depuis les composants
 
   return {
     // État

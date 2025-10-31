@@ -61,19 +61,19 @@ fi
 echo "✅ Token obtenu: ${TOKEN:0:20}..."
 echo ""
 
-# 3. Ajouter une base de données PostgreSQL de test
-echo "🗄️ 3. Ajout d'une base de données PostgreSQL de test..."
+# 3. Ajouter une base de données MySQL de test (MAMP)
+echo "🗄️ 3. Ajout d'une base de données MySQL de test (MAMP)..."
 DB_RESPONSE=$(curl -s -X POST "$BASE_URL/api/databases" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "name": "Base de test PostgreSQL",
-    "type": "postgresql",
+    "name": "Base de test MySQL MAMP",
+    "type": "mysql",
     "host": "localhost",
-    "port": "5432",
-    "username": "postgres",
-    "password": "password",
-    "db_name": "test_db"
+    "port": "8889",
+    "username": "root",
+    "password": "root",
+    "db_name": "mysql"
   }')
 
 echo "Réponse d'ajout de base de données:"
@@ -103,7 +103,7 @@ echo "Liste des bases de données:"
 pretty_json "$LIST_DB_RESPONSE"
 echo ""
 
-# 5. Créer une sauvegarde (cela échouera probablement car PostgreSQL n'est pas configuré)
+# 5. Créer une sauvegarde MySQL (MAMP)
 echo "💾 5. Création d'une sauvegarde..."
 BACKUP_RESPONSE=$(curl -s -X POST "$BASE_URL/api/backups/database/$DB_ID" \
   -H "Authorization: Bearer $TOKEN")
@@ -154,6 +154,8 @@ fi
 echo "✅ Test terminé!"
 echo ""
 echo "📝 Notes:"
-echo "- Les sauvegardes peuvent échouer si PostgreSQL/MySQL ne sont pas installés ou configurés"
-echo "- Les fichiers de sauvegarde sont stockés dans db/backups/{type}/"
+echo "- Les sauvegardes MySQL utilisent maintenant les chemins MAMP (/Applications/MAMP/Library/bin/mysql80/bin/mysqldump)"
+echo "- Assurez-vous que MAMP est démarré et que MySQL fonctionne sur le port 8889"
+echo "- Les paramètres par défaut de MAMP sont: host=localhost, port=8889, user=root, password=root"
+echo "- Les fichiers de sauvegarde sont stockés dans db/backups/mysql/"
 echo "- Vérifiez les logs du serveur pour plus de détails sur les erreurs"

@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 shadow-lg sticky top-0 z-50">
+  <header v-if="initialized" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 shadow-lg sticky top-0 z-50">
     <div class="container mx-auto">
       <div class="flex flex-col md:flex-row items-center justify-between">
         <!-- Logo et titre -->
@@ -73,7 +73,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
-                <span class="hidden md:inline">{{ currentUser?.firstname }}</span>
+                <span class="hidden md:inline">{{ currentUser?.firstname || 'Utilisateur' }}</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
@@ -88,9 +88,9 @@
                 <!-- User info -->
                 <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
                   <p class="text-sm font-medium text-gray-900">
-                    {{ currentUser?.firstname }} {{ currentUser?.lastname }}
+                    {{ currentUser?.firstname || 'Prénom' }} {{ currentUser?.lastname || 'Nom' }}
                   </p>
-                  <p class="text-xs text-gray-500">{{ currentUser?.email }}</p>
+                  <p class="text-xs text-gray-500">{{ currentUser?.email || 'email@example.com' }}</p>
                   <span 
                     class="inline-block mt-2 text-xs px-2 py-1 rounded-full font-semibold"
                     :class="isAdmin ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'"
@@ -156,7 +156,7 @@ const loading = ref<boolean>(false)
 const showUserMenu = ref<boolean>(false)
 
 // Computed réactifs depuis le store
-const { isAuthenticated, isAdmin, user: currentUser } = storeToRefs(authStore)
+const { isAuthenticated, isAdmin, user: currentUser, initialized } = storeToRefs(authStore)
 
 // Computed pour le lien du dashboard selon le rôle
 const dashboardLink = computed(() => {

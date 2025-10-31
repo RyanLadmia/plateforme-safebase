@@ -63,6 +63,9 @@ func main() {
 	backupService := services.NewBackupService(backupRepo, databaseRepo, backupDir)
 	databaseService := services.NewDatabaseService(databaseRepo)
 
+	// Set database service in backup service (to avoid circular dependency)
+	backupService.SetDatabaseService(databaseService)
+
 	// Nettoyage initial des sessions expirées au démarrage
 	log.Println(config.Yellow + "Nettoyage des sessions expirées..." + config.Reset)
 	if err := authService.CleanupExpiredSessions(); err != nil {

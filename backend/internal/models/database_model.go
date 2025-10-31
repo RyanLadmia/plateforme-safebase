@@ -6,6 +6,28 @@ import (
 	"gorm.io/gorm"
 )
 
+// DatabaseCreateRequest is used for JSON binding during creation
+type DatabaseCreateRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Type     string `json:"type" binding:"required,oneof=mysql postgresql"`
+	Host     string `json:"host" binding:"required"`
+	Port     string `json:"port" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	DbName   string `json:"db_name" binding:"required"`
+}
+
+// DatabaseUpdateRequest is used for JSON binding during updates
+type DatabaseUpdateRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Type     string `json:"type" binding:"required,oneof=mysql postgresql"`
+	Host     string `json:"host" binding:"required"`
+	Port     string `json:"port" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password"` // Optional for updates
+	DbName   string `json:"db_name" binding:"required"`
+}
+
 type Database struct {
 	Id        uint           `gorm:"primaryKey" json:"id"`
 	Name      string         `gorm:"size:100;not null" json:"name"`
