@@ -59,6 +59,16 @@ export class DatabaseService {
       throw new Error('Le type de base de données doit être mysql ou postgresql')
     }
 
+    // Si une URL est fournie, les champs individuels ne sont pas requis
+    if (data.url && data.url.trim() !== '') {
+      // Validation basique de l'URL
+      if (!data.url.includes('://')) {
+        throw new Error('L\'URL doit être au format: mysql://user:pass@host:port/db ou postgresql://user:pass@host:port/db')
+      }
+      return // Pas besoin de valider les champs individuels
+    }
+
+    // Si pas d'URL, tous les champs individuels sont requis
     if (!data.host || data.host.trim() === '') {
       throw new Error('L\'hôte est requis')
     }

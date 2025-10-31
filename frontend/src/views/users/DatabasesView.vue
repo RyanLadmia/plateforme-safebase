@@ -67,29 +67,50 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium mb-2">Hôte</label>
-              <input v-model="form.host" required class="w-full px-4 py-2 border rounded-lg" />
+              <input
+                v-model="form.host"
+                :required="!form.url"
+                class="w-full px-4 py-2 border rounded-lg"
+                :placeholder="form.url ? 'Optionnel si URL fournie' : ''"
+              />
             </div>
             <div>
               <label class="block text-sm font-medium mb-2">Port</label>
-              <input v-model="form.port" required class="w-full px-4 py-2 border rounded-lg" />
+              <input
+                v-model="form.port"
+                :required="!form.url"
+                class="w-full px-4 py-2 border rounded-lg"
+                :placeholder="form.url ? 'Optionnel si URL fournie' : ''"
+              />
             </div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-2">Nom de la base</label>
-            <input v-model="form.db_name" required class="w-full px-4 py-2 border rounded-lg" />
+            <input
+              v-model="form.db_name"
+              :required="!form.url"
+              class="w-full px-4 py-2 border rounded-lg"
+              :placeholder="form.url ? 'Optionnel si URL fournie' : ''"
+            />
           </div>
           <div>
             <label class="block text-sm font-medium mb-2">Utilisateur</label>
-            <input v-model="form.username" required class="w-full px-4 py-2 border rounded-lg" />
+            <input
+              v-model="form.username"
+              :required="!form.url"
+              class="w-full px-4 py-2 border rounded-lg"
+              :placeholder="form.url ? 'Optionnel si URL fournie' : ''"
+            />
           </div>
           <div>
             <label class="block text-sm font-medium mb-2">Mot de passe</label>
             <div class="relative">
-              <input 
-                v-model="form.password" 
-                :type="showPassword ? 'text' : 'password'" 
-                required 
-                class="w-full px-4 py-2 pr-12 border rounded-lg" 
+              <input
+                v-model="form.password"
+                :type="showPassword ? 'text' : 'password'"
+                :required="!form.url"
+                class="w-full px-4 py-2 pr-12 border rounded-lg"
+                :placeholder="form.url ? 'Optionnel si URL fournie' : ''"
               />
               <button
                 type="button"
@@ -106,6 +127,23 @@
                 </svg>
               </button>
             </div>
+          </div>
+
+          <!-- URL complète (optionnel) -->
+          <div>
+            <label class="block text-sm font-medium mb-2">
+              URL complète (optionnel)
+              <span class="text-xs text-gray-500 ml-2">Alternative aux champs individuels</span>
+            </label>
+            <input
+              v-model="form.url"
+              type="text"
+              class="w-full px-4 py-2 border rounded-lg"
+              placeholder="mysql://user:pass@host:port/db ou postgresql://user:pass@host:port/db"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Si fourni, les champs individuels ci-dessus seront ignorés et extraits de l'URL
+            </p>
           </div>
           <div class="flex justify-end space-x-4">
             <button type="button" @click="closeModal" class="px-6 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
@@ -143,7 +181,8 @@ const form = reactive<DatabaseCreateRequest>({
   port: '5432',
   username: '',
   password: '',
-  db_name: ''
+  db_name: '',
+  url: ''
 })
 
 const createDatabase = async () => {

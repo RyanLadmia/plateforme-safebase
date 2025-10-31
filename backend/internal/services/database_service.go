@@ -41,6 +41,15 @@ func (s *DatabaseService) CreateDatabase(database *models.Database) error {
 		database.Password = encryptedPassword
 	}
 
+	// Encrypt the database URL before storing (contains sensitive connection info)
+	if database.URL != "" {
+		encryptedURL, err := security.EncryptDatabasePassword(database.URL)
+		if err != nil {
+			return fmt.Errorf("erreur lors du chiffrement de l'URL: %v", err)
+		}
+		database.URL = encryptedURL
+	}
+
 	return s.databaseRepo.Create(database)
 }
 
@@ -63,6 +72,15 @@ func (s *DatabaseService) GetDatabaseByID(id uint) (*models.Database, error) {
 			return nil, fmt.Errorf("erreur lors du déchiffrement du mot de passe: %v", err)
 		}
 		database.Password = decryptedPassword
+	}
+
+	// Decrypt the database URL
+	if database.URL != "" {
+		decryptedURL, err := security.DecryptDatabasePassword(database.URL)
+		if err != nil {
+			return nil, fmt.Errorf("erreur lors du déchiffrement de l'URL: %v", err)
+		}
+		database.URL = decryptedURL
 	}
 
 	return database, nil
@@ -94,6 +112,18 @@ func (s *DatabaseService) UpdateDatabase(database *models.Database) error {
 				return fmt.Errorf("erreur lors du chiffrement du mot de passe: %v", err)
 			}
 			database.Password = encryptedPassword
+		}
+	}
+
+	// Encrypt the database URL before storing
+	if database.URL != "" {
+		// Check if URL is already encrypted
+		if !isEncryptedPassword(database.URL) {
+			encryptedURL, err := security.EncryptDatabasePassword(database.URL)
+			if err != nil {
+				return fmt.Errorf("erreur lors du chiffrement de l'URL: %v", err)
+			}
+			database.URL = encryptedURL
 		}
 	}
 

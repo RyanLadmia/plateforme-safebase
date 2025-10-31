@@ -276,12 +276,23 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string) (
 		return "", fmt.Errorf("mot de passe de base de données vide ou non configuré")
 	}
 
-	// Test database connectivity for all connections (including localhost)
-	fmt.Printf("[BACKUP] Testing database connectivity to %s:%s\n", database.Host, database.Port)
-	if err := s.testDatabaseConnectivity(database.Host, database.Port); err != nil {
-		return "", fmt.Errorf("impossible de se connecter à la base de données MySQL. Vérifiez que MAMP est démarré et que MySQL fonctionne sur le port %s: %v", database.Port, err)
+	// Determine if this is a remote connection
+	isRemote := database.Host != "localhost" && database.Host != "127.0.0.1" && !strings.HasPrefix(database.Host, "192.168.") && !strings.HasPrefix(database.Host, "10.")
+	fmt.Printf("[BACKUP] Connection type analysis: host='%s', remote=%t\n", database.Host, isRemote)
+
+	if isRemote {
+		fmt.Printf("[BACKUP] Detected remote MySQL connection to %s:%s\n", database.Host, database.Port)
+		// For remote connections, skip the connectivity test as it might fail due to firewalls
+		// or require specific SSL configurations
+		fmt.Printf("[BACKUP] Skipping connectivity test for remote connection (will test during dump)\n")
+	} else {
+		// Test database connectivity for local connections
+		fmt.Printf("[BACKUP] Testing database connectivity to %s:%s\n", database.Host, database.Port)
+		if err := s.testDatabaseConnectivity(database.Host, database.Port); err != nil {
+			return "", fmt.Errorf("impossible de se connecter à la base de données MySQL. Vérifiez que MySQL est accessible sur le port %s: %v", database.Port, err)
+		}
+		fmt.Printf("[BACKUP] Database connectivity test passed\n")
 	}
-	fmt.Printf("[BACKUP] Database connectivity test passed\n")
 
 	// Find mysqldump executable
 	mysqldumpPath, err := s.findExecutable(s.getMySQLDumpPaths())
@@ -302,32 +313,47 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string) (
 		"--triggers",
 	}
 
-	// Connection configuration
-	if isMAMP {
+	// Connection and SSL configuration
+	if isRemote {
+		fmt.Printf("[BACKUP] Configuring for remote MySQL connection\n")
+		args = append(args, "-h", database.Host, "-P", database.Port)
+
+		// For remote connections, try SSL but don't require it
+		args = append(args,
+			"--ssl-mode=PREFERRED", // Try SSL but don't require it
+		)
+
+		// Add SSL CA certificates if available
+		sslCaPaths := []string{
+			"/etc/ssl/certs/ca-certificates.crt", // Linux
+			"/etc/ssl/cert.pem",                  // macOS
+			"/etc/pki/tls/certs/ca-bundle.crt",   // RedHat/CentOS
+		}
+
+		for _, caPath := range sslCaPaths {
+			if _, err := os.Stat(caPath); err == nil {
+				args = append(args, "--ssl-ca="+caPath)
+				fmt.Printf("[BACKUP] Using SSL CA: %s\n", caPath)
+				break
+			}
+		}
+
+	} else if isMAMP {
 		fmt.Printf("[BACKUP] Detected MAMP installation, using TCP connection (recommended for MAMP)\n")
-		// For MAMP, prefer TCP connection as socket might not be accessible
 		args = append(args, "-h", database.Host, "-P", database.Port)
 	} else {
-		// Standard TCP connection for non-MAMP installations
+		// Standard local TCP connection
 		args = append(args, "-h", database.Host, "-P", database.Port)
-	}
-
-	// Add SSL options for remote connections (not localhost)
-	if database.Host != "localhost" && database.Host != "127.0.0.1" {
-		args = append(args,
-			"--ssl-mode=REQUIRED",
-			"--ssl-ca=/etc/ssl/certs/ca-certificates.crt", // Linux
-			"--ssl-ca=/etc/ssl/cert.pem",                  // macOS
-		)
 	}
 
 	args = append(args, database.DbName)
 
-	fmt.Printf("[BACKUP] Command args: %v\n", args)
-
 	// Set timeout for the command (30 minutes max for large databases)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
+
+	// Try with SSL options first
+	fmt.Printf("[BACKUP] Command args: %v\n", args)
 	cmd := exec.CommandContext(ctx, mysqldumpPath, args...)
 
 	output, err := os.Create(dumpFile)
@@ -342,11 +368,60 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string) (
 	cmd.Stderr = &stderr
 
 	fmt.Printf("[BACKUP] Starting mysqldump execution...\n")
-	if err := cmd.Run(); err != nil {
+	err = cmd.Run()
+
+	if err != nil {
+		stderrStr := stderr.String()
 		fmt.Printf("[BACKUP] mysqldump failed: %v\n", err)
-		fmt.Printf("[BACKUP] stderr: %s\n", stderr.String())
-		os.Remove(dumpFile)
-		return "", fmt.Errorf("erreur lors de l'exécution de mysqldump: %v, stderr: %s", err, stderr.String())
+		fmt.Printf("[BACKUP] stderr: %s\n", stderrStr)
+
+		// If SSL/connect options not recognized, try without SSL options
+		if strings.Contains(stderrStr, "unknown variable") &&
+			(strings.Contains(stderrStr, "ssl-mode") ||
+				strings.Contains(stderrStr, "connect_timeout") ||
+				strings.Contains(stderrStr, "ssl-ca")) {
+
+			fmt.Printf("[BACKUP] SSL options not supported, retrying with basic options...\n")
+
+			// Retry with basic args (no SSL options)
+			baseArgs := []string{
+				"-u", database.Username,
+				"-p" + database.Password,
+				"--single-transaction",
+				"--routines",
+				"--triggers",
+			}
+
+			if isRemote || isMAMP {
+				baseArgs = append(baseArgs, "-h", database.Host, "-P", database.Port)
+			} else {
+				baseArgs = append(baseArgs, "-h", database.Host, "-P", database.Port)
+			}
+
+			baseArgs = append(baseArgs, database.DbName)
+
+			cmd = exec.CommandContext(context.Background(), mysqldumpPath, baseArgs...)
+			output2, err := os.Create(dumpFile)
+			if err != nil {
+				return "", fmt.Errorf("erreur lors de la création du fichier de dump: %v", err)
+			}
+			defer output2.Close()
+
+			var stderr2 bytes.Buffer
+			cmd.Stdout = output2
+			cmd.Stderr = &stderr2
+
+			fmt.Printf("[BACKUP] Retry command args: %v\n", baseArgs)
+			if err2 := cmd.Run(); err2 != nil {
+				fmt.Printf("[BACKUP] mysqldump retry failed: %v\n", err2)
+				fmt.Printf("[BACKUP] stderr: %s\n", stderr2.String())
+				os.Remove(dumpFile)
+				return "", fmt.Errorf("erreur lors de l'exécution de mysqldump (même sans SSL): %v, stderr: %s", err2, stderr2.String())
+			}
+		} else {
+			os.Remove(dumpFile)
+			return "", fmt.Errorf("erreur lors de l'exécution de mysqldump: %v, stderr: %s", err, stderrStr)
+		}
 	}
 
 	fmt.Printf("[BACKUP] mysqldump completed successfully\n")
@@ -359,9 +434,30 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 	timestamp := time.Now().Format("20060102_150405")
 	dumpFile := filepath.Join(outputDir, fmt.Sprintf("%s_%s.sql", database.Name, timestamp))
 
-	// Test network connectivity first
-	if err := s.testDatabaseConnectivity(database.Host, database.Port); err != nil {
-		return "", fmt.Errorf("test de connectivité échoué: %v", err)
+	// Log the start of backup process
+	fmt.Printf("[BACKUP] Starting PostgreSQL dump for database %s (host: %s, port: %s, user: %s, password_length: %d)\n",
+		database.DbName, database.Host, database.Port, database.Username, len(database.Password))
+
+	// Validate that password is not empty
+	if len(database.Password) == 0 {
+		return "", fmt.Errorf("mot de passe de base de données vide ou non configuré")
+	}
+
+	// Determine if this is a remote connection
+	isRemote := database.Host != "localhost" && database.Host != "127.0.0.1" && !strings.HasPrefix(database.Host, "192.168.") && !strings.HasPrefix(database.Host, "10.")
+	fmt.Printf("[BACKUP] Connection type analysis: host='%s', remote=%t\n", database.Host, isRemote)
+
+	if isRemote {
+		fmt.Printf("[BACKUP] Detected remote PostgreSQL connection to %s:%s\n", database.Host, database.Port)
+		// For remote connections, skip the connectivity test as it might fail due to firewalls
+		fmt.Printf("[BACKUP] Skipping connectivity test for remote connection (will test during dump)\n")
+	} else {
+		// Test database connectivity for local connections
+		fmt.Printf("[BACKUP] Testing database connectivity to %s:%s\n", database.Host, database.Port)
+		if err := s.testDatabaseConnectivity(database.Host, database.Port); err != nil {
+			return "", fmt.Errorf("test de connectivité échoué: %v", err)
+		}
+		fmt.Printf("[BACKUP] Database connectivity test passed\n")
 	}
 
 	// Find pg_dump executable
@@ -369,13 +465,14 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 	if err != nil {
 		return "", fmt.Errorf("pg_dump non trouvé: %v", err)
 	}
+	fmt.Printf("[BACKUP] Using pg_dump at: %s\n", pgDumpPath)
 
 	// Set environment variable for password
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("PGPASSWORD=%s", database.Password))
 
-	// Build pg_dump command with SSL options for remote connections
-	args := []string{
+	// Try pg_dump with SSL options first, fallback to basic options if SSL not supported
+	baseArgs := []string{
 		"-h", database.Host,
 		"-p", database.Port,
 		"-U", database.Username,
@@ -388,24 +485,63 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 		"-f", dumpFile,
 	}
 
-	// Add SSL options for remote connections (not localhost)
-	if database.Host != "localhost" && database.Host != "127.0.0.1" {
-		args = append(args,
-			"--sslmode=require",
-		)
+	var finalArgs []string
+	if isRemote {
+		// Try with SSL options for remote connections
+		fmt.Printf("[BACKUP] Attempting SSL for remote PostgreSQL connection\n")
+		finalArgs = append(baseArgs, "--sslmode=require")
+	} else {
+		// For local connections, try SSL first
+		finalArgs = append(baseArgs, "--sslmode=prefer")
 	}
 
 	// Set timeout for the command (30 minutes max for large databases)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
+	cmd := exec.CommandContext(ctx, pgDumpPath, finalArgs...)
 
 	cmd.Env = env
 
-	if err := cmd.Run(); err != nil {
-		os.Remove(dumpFile)
-		return "", fmt.Errorf("erreur lors de l'exécution de pg_dump: %v", err)
+	// Capture stderr for better error reporting
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	fmt.Printf("[BACKUP] Command args: %v\n", finalArgs)
+	fmt.Printf("[BACKUP] Starting pg_dump execution...\n")
+
+	err = cmd.Run()
+	if err != nil {
+		stderrStr := stderr.String()
+		fmt.Printf("[BACKUP] pg_dump failed: %v\n", err)
+		fmt.Printf("[BACKUP] stderr: %s\n", stderrStr)
+
+		// If SSL option not recognized, try without SSL
+		if strings.Contains(stderrStr, "unrecognized option") && strings.Contains(stderrStr, "sslmode") {
+			fmt.Printf("[BACKUP] SSL options not supported, retrying without SSL...\n")
+
+			// Retry with basic args (no SSL options)
+			finalArgs = baseArgs
+			cmd = exec.CommandContext(context.Background(), pgDumpPath, finalArgs...)
+			cmd.Env = env
+
+			var stderr2 bytes.Buffer
+			cmd.Stderr = &stderr2
+
+			fmt.Printf("[BACKUP] Retry command args: %v\n", finalArgs)
+			err2 := cmd.Run()
+			if err2 != nil {
+				fmt.Printf("[BACKUP] pg_dump retry failed: %v\n", err2)
+				fmt.Printf("[BACKUP] stderr: %s\n", stderr2.String())
+				os.Remove(dumpFile)
+				return "", fmt.Errorf("erreur lors de l'exécution de pg_dump (même sans SSL): %v, stderr: %s", err2, stderr2.String())
+			}
+		} else {
+			os.Remove(dumpFile)
+			return "", fmt.Errorf("erreur lors de l'exécution de pg_dump: %v, stderr: %s", err, stderrStr)
+		}
 	}
+
+	fmt.Printf("[BACKUP] pg_dump completed successfully\n")
 
 	return dumpFile, nil
 }
