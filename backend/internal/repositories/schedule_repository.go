@@ -10,14 +10,28 @@ type ScheduleRepository struct {
 	db *gorm.DB
 }
 
-// Constructor of the SchudleRepository, can be used to create a new SchudleRepository
-func NewSchudleRepository(db *gorm.DB) *ScheduleRepository {
+// Constructor of the ScheduleRepository, can be used to create a new ScheduleRepository
+func NewScheduleRepository(db *gorm.DB) *ScheduleRepository {
 	return &ScheduleRepository{db: db}
 }
 
 // Create a new schedule record
 func (r *ScheduleRepository) Create(schedule *models.Schedule) error {
 	return r.db.Create(schedule).Error
+}
+
+// Get all schedules
+func (r *ScheduleRepository) GetAll() ([]models.Schedule, error) {
+	var schedules []models.Schedule
+	err := r.db.Preload("Database").Preload("User").Find(&schedules).Error
+	return schedules, err
+}
+
+// Get all active schedules
+func (r *ScheduleRepository) GetActive() ([]models.Schedule, error) {
+	var schedules []models.Schedule
+	err := r.db.Preload("Database").Preload("User").Where("active = ?", true).Find(&schedules).Error
+	return schedules, err
 }
 
 // Get schedule by ID
@@ -33,7 +47,7 @@ func (r *ScheduleRepository) GetByID(id uint) (*models.Schedule, error) {
 // Get all schedules for a user
 func (r *ScheduleRepository) GetByUserID(userID uint) ([]models.Schedule, error) {
 	var schedules []models.Schedule
-	err := r.db.Preload("Databse").Where("user_id = ?", userID).Find(&schedules).Error
+	err := r.db.Preload("Database").Where("user_id = ?", userID).Find(&schedules).Error
 	return schedules, err
 }
 
@@ -45,10 +59,8 @@ func (r *ScheduleRepository) GetByDatabaseID(databaseID uint) ([]models.Schedule
 }
 
 // Update a Cron Expression
-func (r *ScheduleRepository) UpdateCronExpression(id uint, CronExpression string) error {
-	return r.db.Model(&models.Schedule{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"cron_expression": CronExpression,
-	}).Error
+func (r *ScheduleRepository) UpdateCronExpression(id uint, cronExpression string) error {
+	return r.db.Model(&models.Schedule{}).Where("id = ?", id).Update("cron_expression", cronExpression).Error
 }
 
 // Update an status
