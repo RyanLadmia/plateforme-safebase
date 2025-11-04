@@ -3,19 +3,29 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { databaseService } from '@/services/database_service'
 import { backupService } from '@/services/backup_service'
+import { scheduleService } from '@/services/schedule_service'
 import type { Database } from '@/types/database'
 import type { Backup } from '@/types/backup'
+import type { Schedule } from '@/types/schedule'
 
 export const useSafebaseStore = defineStore('safebase', () => {
   // État réactif
   const databases = ref<Database[]>([])
   const backups = ref<Backup[]>([])
+  const schedules = ref<Schedule[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
   // Getters calculés
   const databaseCount = computed(() => databases.value.length)
   const backupCount = computed(() => backups.value.length)
+  const scheduleCount = computed(() => schedules.value.length)
+  const activeSchedules = computed(() => 
+    schedules.value.filter(s => s.active)
+  )
+  const inactiveSchedules = computed(() => 
+    schedules.value.filter(s => !s.active)
+  )
   const completedBackups = computed(() => 
     backups.value.filter(b => b.status === 'completed')
   )
@@ -100,6 +110,35 @@ export const useSafebaseStore = defineStore('safebase', () => {
     backups.value = backups.value.filter(b => b.id !== id)
   }
 
+  // Actions pour les schedules
+  const fetchSchedules = async (): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      schedules.value = await scheduleService.fetchSchedules()
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const addSchedule = (schedule: Schedule): void => {
+    schedules.value.push(schedule)
+  }
+
+  const updateSchedule = (schedule: Schedule): void => {
+    const index = schedules.value.findIndex(s => s.id === schedule.id)
+    if (index !== -1) {
+      schedules.value[index] = schedule
+    }
+  }
+
+  const removeSchedule = (id: number): void => {
+    schedules.value = schedules.value.filter(s => s.id !== id)
+  }
+
   // Utilitaires
   const clearError = (): void => {
     error.value = null
@@ -116,12 +155,16 @@ export const useSafebaseStore = defineStore('safebase', () => {
     // État
     databases,
     backups,
+    schedules,
     loading,
     error,
     
     // Getters
     databaseCount,
     backupCount,
+    scheduleCount,
+    activeSchedules,
+    inactiveSchedules,
     completedBackups,
     pendingBackups,
     failedBackups,
@@ -138,6 +181,12 @@ export const useSafebaseStore = defineStore('safebase', () => {
     addBackup,
     updateBackup,
     removeBackup,
+    
+    // Actions - Schedules
+    fetchSchedules,
+    addSchedule,
+    updateSchedule,
+    removeSchedule,
     
     // Utilitaires
     clearError,

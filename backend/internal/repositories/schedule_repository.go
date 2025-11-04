@@ -68,6 +68,11 @@ func (r *ScheduleRepository) UpdateStatus(id uint, active bool) error {
 	return r.db.Model(&models.Schedule{}).Where("id = ?", id).Update("active", active).Error
 }
 
+// Update a schedule
+func (r *ScheduleRepository) Update(schedule *models.Schedule) error {
+	return r.db.Save(schedule).Error
+}
+
 // Delete a schedule
 func (r *ScheduleRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Schedule{}, id).Error

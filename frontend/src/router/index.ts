@@ -80,6 +80,15 @@ const routes: RouteRecordRaw[] = [
       title: 'Mes sauvegardes - SafeBase'
     }
   },
+  {
+    path: '/user/schedules',
+    name: 'user-schedules',
+    component: () => import('@/views/users/SchedulesView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mes sauvegardes planifiées - SafeBase'
+    }
+  },
 
   // Routes administrateur (rôle admin requis)
   {

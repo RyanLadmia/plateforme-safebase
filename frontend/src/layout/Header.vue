@@ -27,6 +27,19 @@
               <span class="hidden md:inline">{{ isAdmin ? 'Admin' : 'Dashboard' }}</span>
             </RouterLink>
 
+                        <!-- Lien Gestion utilisateurs (admin uniquement) -->
+            <RouterLink 
+              v-if="isAdmin"
+              to="/admin/users"
+              class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
+              active-class="bg-white/30"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+              <span class="hidden md:inline">Utilisateurs</span>
+            </RouterLink>
+
             <!-- Lien Bases de données (utilisateurs uniquement) -->
             <RouterLink 
               to="/user/databases"
@@ -51,17 +64,16 @@
               <span class="hidden md:inline">Sauvegardes</span>
             </RouterLink>
 
-            <!-- Lien Gestion utilisateurs (admin uniquement) -->
+            <!-- Lien Planifications (utilisateurs uniquement) -->
             <RouterLink 
-              v-if="isAdmin"
-              to="/admin/users"
+              to="/user/schedules"
               class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
               active-class="bg-white/30"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              <span class="hidden md:inline">Utilisateurs</span>
+              <span class="hidden md:inline">Planifications</span>
             </RouterLink>
 
             <!-- Dropdown utilisateur -->

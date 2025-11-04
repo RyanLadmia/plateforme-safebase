@@ -21,7 +21,7 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <!-- Databases Count -->
         <div class="bg-white rounded-lg shadow p-6">
           <div class="flex items-center">
@@ -52,6 +52,21 @@
           </div>
         </div>
 
+        <!-- Schedules Count -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center">
+            <div class="flex-1">
+              <p class="text-gray-500 text-sm">Planifications</p>
+              <p class="text-3xl font-bold text-gray-900">{{ scheduleCount }}</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
         <!-- Pending Backups -->
         <div class="bg-white rounded-lg shadow p-6">
           <div class="flex items-center">
@@ -69,7 +84,7 @@
       </div>
 
       <!-- Quick Actions -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <router-link 
           to="/user/databases" 
           class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
@@ -84,6 +99,14 @@
         >
           <h3 class="text-xl font-semibold text-gray-900 mb-2">Gérer mes sauvegardes</h3>
           <p class="text-gray-600">Créez et téléchargez vos sauvegardes</p>
+        </router-link>
+
+        <router-link 
+          to="/user/schedules" 
+          class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
+        >
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">Gérer mes planifications</h3>
+          <p class="text-gray-600">Planifiez des sauvegardes automatiques</p>
         </router-link>
       </div>
 
@@ -156,7 +179,7 @@ const authStore = useAuthStore()
 const safebaseStore = useSafebaseStore()
 
 const { user } = storeToRefs(authStore)
-const { databases, backups, loading, error, databaseCount, backupCount, pendingBackups } = storeToRefs(safebaseStore)
+const { databases, backups, loading, error, databaseCount, backupCount, scheduleCount, pendingBackups } = storeToRefs(safebaseStore)
 
 const recentBackups = computed(() => {
   return backupService.sortByDate(backups.value).slice(0, 5)

@@ -16,5 +16,5 @@ type Schedule struct {
 	UserId         uint           `gorm:"index;not null" json:"user_id"`
 	User           User           `gorm:"foreignKey:UserId" json:"-"`
 	DatabaseId     uint           `gorm:"index;not null" json:"database_id"`
-	Database       Database       `gorm:"foreignKey:DatabaseId" json:"-"`
+	Database       Database       `gorm:"foreignKey:DatabaseId" json:"database"`
 }

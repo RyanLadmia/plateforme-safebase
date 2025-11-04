@@ -34,6 +34,7 @@ func main() {
 		&models.Session{},  // Session table
 		&models.Database{}, // Database table
 		&models.Backup{},   // Backup table
+		&models.Schedule{}, // Schedule table
 		// &models.Alert{},   // Alert table (for later)
 		// &models.Restore{}, // Restore table (for later)
 	); err != nil {
@@ -49,6 +50,7 @@ func main() {
 	sessionRepo := repositories.NewSessionRepository(database)
 	databaseRepo := repositories.NewDatabaseRepository(database)
 	backupRepo := repositories.NewBackupRepository(database)
+	scheduleRepo := repositories.NewScheduleRepository(database)
 
 	// Initialize services (business logic)
 	authService := services.NewAuthService(
@@ -62,6 +64,7 @@ func main() {
 	backupDir := filepath.Join(".", "db", "backups")
 	backupService := services.NewBackupService(backupRepo, databaseRepo, backupDir)
 	databaseService := services.NewDatabaseService(databaseRepo)
+	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
 
 	// Set database service in backup service (to avoid circular dependency)
 	backupService.SetDatabaseService(databaseService)
@@ -81,6 +84,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 	databaseHandler := handlers.NewDatabaseHandler(databaseService)
 	backupHandler := handlers.NewBackupHandler(backupService)
+	scheduleHandler := handlers.NewScheduleHandler(scheduleService)
 
 	// Initialize middleware
 	authMiddleware := middlewares.NewAuthMiddleware(cfg.JWT_SECRET)
@@ -142,6 +146,13 @@ func main() {
 	// Integration of database and backup routes
 	routes.SetupDatabaseRoutes(server, databaseHandler, authMiddleware)
 	routes.SetupBackupRoutes(server, backupHandler, authMiddleware)
+	routes.SetupScheduleRoutes(server, scheduleHandler, authMiddleware)
+
+	// Start the cron scheduler and load active schedules
+	scheduleService.StartScheduler()
+	if err := scheduleService.LoadActiveSchedules(); err != nil {
+		log.Printf(config.Yellow+"Avertissement lors du chargement des schedules: %v"+config.Reset, err)
+	}
 
 	// Start the server
 	port := cfg.PORT
@@ -164,7 +175,12 @@ func main() {
 	fmt.Printf("   GET  /api/backups                       - Get user backups\n")
 	fmt.Printf("   GET  /api/backups/:id                   - Get backup by ID\n")
 	fmt.Printf("   GET  /api/backups/:id/download          - Download backup\n")
-	fmt.Printf("   DELETE /api/backups/:id                 - Delete backup\n" + config.Reset)
+	fmt.Printf("   DELETE /api/backups/:id                 - Delete backup\n")
+	fmt.Printf("   POST /api/schedules                     - Create schedule\n")
+	fmt.Printf("   GET  /api/schedules                     - Get user schedules\n")
+	fmt.Printf("   GET  /api/schedules/:id                 - Get schedule by ID\n")
+	fmt.Printf("   PUT  /api/schedules/:id                 - Update schedule\n")
+	fmt.Printf("   DELETE /api/schedules/:id               - Delete schedule\n" + config.Reset)
 
 	if err := server.Run(":" + port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
