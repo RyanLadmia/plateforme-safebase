@@ -396,6 +396,7 @@ const getNextExecution = (cronExpression: string): string => {
 
 // Lifecycle
 onMounted(async () => {
+  await safebaseStore.fetchDatabases()
   await safebaseStore.fetchSchedules()
 })
 </script>
