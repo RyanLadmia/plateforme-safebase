@@ -53,8 +53,8 @@
 
           <div class="text-sm text-gray-600 space-y-2">
             <div>
-              <strong>Expression Cron:</strong>
-              <code class="bg-gray-100 px-2 py-1 rounded text-xs">{{ schedule.cron_expression }}</code>
+              <strong>Fréquence:</strong>
+              <span class="text-gray-800">{{ getFrequencyDescription(schedule.cron_expression) }}</span>
             </div>
             <div>
               <strong>Prochaine exécution:</strong>
@@ -271,16 +271,124 @@ const formatDate = (dateString: string) => {
   })
 }
 
-const getNextExecution = (cronExpression: string) => {
-  // Cette fonction est simplifiée - dans un vrai projet, utiliser une bibliothèque cron
+const getFrequencyDescription = (cronExpression: string): string => {
   try {
-    const parts = cronExpression.split(' ')
+    const parts = cronExpression.trim().split(/\s+/)
     if (parts.length !== 5) return 'Expression invalide'
 
-    const [minute, hour] = parts
-    if (minute === '*' || hour === '*') return 'Fréquence variable'
+    const [minute, hour, day, month, dayOfWeek] = parts
 
-    return `Tous les jours à ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
+    // Expressions prédéfinies courantes
+    if (cronExpression === '0 0 * * *') return 'Tous les jours à minuit'
+    if (cronExpression === '0 6 * * *') return 'Tous les jours à 6h'
+    if (cronExpression === '0 12 * * *') return 'Tous les jours à midi'
+    if (cronExpression === '0 18 * * *') return 'Tous les jours à 18h'
+    if (cronExpression === '0 */6 * * *') return 'Toutes les 6 heures'
+    if (cronExpression === '0 */12 * * *') return 'Toutes les 12 heures'
+    if (cronExpression === '0 * * * *') return 'Toutes les heures'
+    if (cronExpression === '*/30 * * * *') return 'Toutes les 30 minutes'
+    if (cronExpression === '0 0 * * 1') return 'Tous les lundis à minuit'
+    if (cronExpression === '0 0 1 * *') return 'Le 1er de chaque mois à minuit'
+
+    // Analyse plus fine
+    if (minute === '0' && hour !== '*' && day === '*' && month === '*' && dayOfWeek === '*') {
+      const hourNum = parseInt(hour)
+      if (hourNum === 0) return 'Tous les jours à minuit'
+      if (hourNum < 12) return `Tous les jours à ${hourNum}h`
+      if (hourNum === 12) return 'Tous les jours à midi'
+      return `Tous les jours à ${hourNum}h`
+    }
+
+    if (minute === '0' && hour === '*' && day === '*' && month === '*' && dayOfWeek === '*') {
+      return 'Toutes les heures'
+    }
+
+    if (minute === '0' && hour.startsWith('*/') && day === '*' && month === '*' && dayOfWeek === '*') {
+      const interval = parseInt(hour.substring(2))
+      return `Toutes les ${interval} heures`
+    }
+
+    if (minute === '0' && hour === '0' && day === '*' && month === '*' && dayOfWeek !== '*') {
+      const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+      if (dayOfWeek === '1') return 'Tous les lundis à minuit'
+      if (dayOfWeek === '2') return 'Tous les mardis à minuit'
+      if (dayOfWeek === '3') return 'Tous les mercredis à minuit'
+      if (dayOfWeek === '4') return 'Tous les jeudis à minuit'
+      if (dayOfWeek === '5') return 'Tous les vendredis à minuit'
+      if (dayOfWeek === '6') return 'Tous les samedis à minuit'
+      if (dayOfWeek === '0') return 'Tous les dimanches à minuit'
+    }
+
+    if (minute === '0' && hour === '0' && day === '1' && month === '*' && dayOfWeek === '*') {
+      return 'Le 1er de chaque mois à minuit'
+    }
+
+    // Pour les expressions plus complexes
+    return 'Fréquence personnalisée'
+  } catch {
+    return 'Expression invalide'
+  }
+}
+
+const getNextExecution = (cronExpression: string): string => {
+  try {
+    const now = new Date()
+    const parts = cronExpression.trim().split(/\s+/)
+    if (parts.length !== 5) return 'Expression invalide'
+
+    const [minute, hour, day, month, dayOfWeek] = parts
+
+    // Pour les expressions simples quotidiennes
+    if (minute !== '*' && hour !== '*' && day === '*' && month === '*' && dayOfWeek === '*') {
+      const scheduledHour = parseInt(hour)
+      const scheduledMinute = parseInt(minute)
+      const scheduledTime = new Date(now)
+      scheduledTime.setHours(scheduledHour, scheduledMinute, 0, 0)
+
+      if (scheduledTime <= now) {
+        scheduledTime.setDate(scheduledTime.getDate() + 1)
+      }
+
+      return `Prochaine: ${scheduledTime.toLocaleDateString('fr-FR')} à ${scheduledHour.toString().padStart(2, '0')}:${scheduledMinute.toString().padStart(2, '0')}`
+    }
+
+    // Pour les expressions horaires
+    if (minute === '0' && hour.startsWith('*/') && day === '*' && month === '*' && dayOfWeek === '*') {
+      const interval = parseInt(hour.substring(2))
+      const nextHour = Math.ceil(now.getHours() / interval) * interval
+      const nextTime = new Date(now)
+      nextTime.setHours(nextHour, 0, 0, 0)
+      if (nextTime <= now) {
+        nextTime.setHours(nextTime.getHours() + interval)
+      }
+      return `Prochaine: ${nextTime.toLocaleDateString('fr-FR')} à ${nextTime.getHours().toString().padStart(2, '0')}:00`
+    }
+
+    // Pour les expressions toutes les heures
+    if (minute === '0' && hour === '*' && day === '*' && month === '*' && dayOfWeek === '*') {
+      const nextTime = new Date(now)
+      nextTime.setHours(now.getHours() + 1, 0, 0, 0)
+      return `Prochaine: ${nextTime.toLocaleDateString('fr-FR')} à ${nextTime.getHours().toString().padStart(2, '0')}:00`
+    }
+
+    // Pour les expressions hebdomadaires
+    if (minute === '0' && hour === '0' && day === '*' && month === '*' && dayOfWeek !== '*') {
+      const targetDay = parseInt(dayOfWeek)
+      const currentDay = now.getDay()
+      const daysUntil = (targetDay - currentDay + 7) % 7
+      const nextTime = new Date(now)
+      nextTime.setDate(now.getDate() + (daysUntil === 0 ? 7 : daysUntil))
+      nextTime.setHours(0, 0, 0, 0)
+      return `Prochaine: ${nextTime.toLocaleDateString('fr-FR')} à 00:00`
+    }
+
+    // Pour les expressions mensuelles
+    if (minute === '0' && hour === '0' && day === '1' && month === '*' && dayOfWeek === '*') {
+      const nextTime = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0)
+      return `Prochaine: ${nextTime.toLocaleDateString('fr-FR')} à 00:00`
+    }
+
+    return 'Calcul en cours...'
   } catch {
     return 'Expression invalide'
   }
