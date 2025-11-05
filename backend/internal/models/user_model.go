@@ -21,4 +21,5 @@ type User struct {
 	Schedules []Schedule `gorm:"constraint:OnDelete:CASCADE;" json:"schedules,omitempty"`
 	Restores  []Restore  `gorm:"constraint:OnDelete:CASCADE;" json:"restores,omitempty"`
 	Alerts    []Alert    `gorm:"constraint:OnDelete:CASCADE;" json:"alerts,omitempty"`
+	Databases []Database `gorm:"constraint:OnDelete:CASCADE;" json:"databases,omitempty"`
 }

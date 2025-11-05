@@ -20,4 +20,5 @@ type Backup struct {
 	User       User           `gorm:"foreignKey:UserId" json:"-"`
 	DatabaseId uint           `gorm:"index;not null" json:"database_id"`
 	Database   Database       `gorm:"foreignKey:DatabaseId" json:"-"`
+	Restores   []Restore      `gorm:"foreignKey:BackupId;constraint:OnDelete:CASCADE;" json:"restores,omitempty"`
 }

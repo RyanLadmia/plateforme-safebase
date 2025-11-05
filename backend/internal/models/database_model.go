@@ -52,6 +52,7 @@ type Database struct {
 	User      User           `gorm:"foreignKey:UserId" json:"-"`
 	Backups   []Backup       `gorm:"foreignKey:DatabaseId;constraint:OnDelete:CASCADE;" json:"backups,omitempty"`
 	Restores  []Restore      `gorm:"foreignKey:DatabaseId;constraint:OnDelete:CASCADE;" json:"restores,omitempty"`
+	Schedules []Schedule     `gorm:"foreignKey:DatabaseId;constraint:OnDelete:CASCADE;" json:"schedules,omitempty"`
 }
 
 // ParseDatabaseURL parses a database connection URL and extracts components
