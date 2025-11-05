@@ -23,10 +23,11 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 
 // Structure pour la requête d'inscription (inclut le mot de passe)
 type RegisterRequest struct {
-	Firstname string `json:"firstname" binding:"required"`
-	Lastname  string `json:"lastname" binding:"required"`
-	Email     string `json:"email" binding:"required,email"`
-	Password  string `json:"password" binding:"required"`
+	Firstname       string `json:"firstname" binding:"required"`
+	Lastname        string `json:"lastname" binding:"required"`
+	Email           string `json:"email" binding:"required,email"`
+	Password        string `json:"password" binding:"required"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
 }
 
 // Register endpoint: POST /auth/register
@@ -36,6 +37,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Printf("Erreur de binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	// Vérifier que les mots de passe correspondent
+	if req.Password != req.ConfirmPassword {
+		log.Printf("Les mots de passe ne correspondent pas pour l'utilisateur: %s", req.Email)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "passwords do not match"})
 		return
 	}
 
