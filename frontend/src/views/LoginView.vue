@@ -19,14 +19,22 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 import AuthComponent from '@/components/auth/AuthComponent.vue'
 
 // Composables
 const router = useRouter()
+const authStore = useAuthStore()
+const { isAdmin } = storeToRefs(authStore)
 
 // Methods
 const handleLoginSuccess = async (): Promise<void> => {
-  // Redirection vers la page d'accueil
-  await router.push('/')
+  // Redirection en fonction du rôle de l'utilisateur
+  if (isAdmin.value) {
+    await router.push('/admin/dashboard')
+  } else {
+    await router.push('/user/dashboard')
+  }
 }
 </script>
