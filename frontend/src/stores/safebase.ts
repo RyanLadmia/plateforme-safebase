@@ -4,15 +4,19 @@ import { ref, computed } from 'vue'
 import { databaseService } from '@/services/database_service'
 import { backupService } from '@/services/backup_service'
 import { scheduleService } from '@/services/schedule_service'
-import type { Database } from '@/types/database'
+import { userService } from '@/services/user_service'
+import type { Database, DatabaseUpdateRequest } from '@/types/database'
 import type { Backup } from '@/types/backup'
 import type { Schedule } from '@/types/schedule'
+import type { User } from '@/types/auth'
+import type { UserUpdateRequest, UserRoleUpdateRequest } from '@/types/user'
 
 export const useSafebaseStore = defineStore('safebase', () => {
   // État réactif
   const databases = ref<Database[]>([])
   const backups = ref<Backup[]>([])
   const schedules = ref<Schedule[]>([])
+  const users = ref<User[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -20,6 +24,11 @@ export const useSafebaseStore = defineStore('safebase', () => {
   const databaseCount = computed(() => databases.value.length)
   const backupCount = computed(() => backups.value.length)
   const scheduleCount = computed(() => schedules.value.length)
+  const userCount = computed(() => users.value.length)
+  const activeUsers = computed(() => users.value.filter(u => u.active))
+  const inactiveUsers = computed(() => users.value.filter(u => !u.active))
+  const adminUsers = computed(() => users.value.filter(u => u.role?.name === 'admin'))
+  const regularUsers = computed(() => users.value.filter(u => u.role?.name === 'user'))
   const activeSchedules = computed(() => 
     schedules.value.filter(s => s.active)
   )
@@ -63,6 +72,20 @@ export const useSafebaseStore = defineStore('safebase', () => {
 
   const removeDatabase = (id: number): void => {
     databases.value = databases.value.filter(d => d.id !== id)
+  }
+
+  const updateDatabaseAsync = async (id: number, databaseData: DatabaseUpdateRequest): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      const updatedDatabase = await databaseService.updateDatabase(id, databaseData)
+      updateDatabase(updatedDatabase)
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   // Actions pour les sauvegardes
@@ -139,6 +162,120 @@ export const useSafebaseStore = defineStore('safebase', () => {
     schedules.value = schedules.value.filter(s => s.id !== id)
   }
 
+  // Actions pour les utilisateurs (Admin)
+  const fetchUsers = async (): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      users.value = await userService.fetchAllUsers()
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchActiveUsers = async (): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      users.value = await userService.fetchAllActiveUsers()
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchUserById = async (id: number): Promise<User> => {
+    loading.value = true
+    error.value = null
+    try {
+      return await userService.fetchUserById(id)
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const updateUser = async (id: number, userData: UserUpdateRequest): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      await userService.updateUser(id, userData)
+      // Mettre à jour l'utilisateur dans la liste
+      const index = users.value.findIndex(u => u.id === id)
+      if (index !== -1) {
+        const updatedUser = await userService.fetchUserById(id)
+        users.value[index] = updatedUser
+      }
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const changeUserRole = async (id: number, roleData: UserRoleUpdateRequest): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      await userService.changeUserRole(id, roleData)
+      // Mettre à jour l'utilisateur dans la liste
+      const index = users.value.findIndex(u => u.id === id)
+      if (index !== -1) {
+        const updatedUser = await userService.fetchUserById(id)
+        users.value[index] = updatedUser
+      }
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const deactivateUser = async (id: number): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      await userService.deactivateUser(id)
+      // Mettre à jour le statut dans la liste
+      const user = users.value.find(u => u.id === id)
+      if (user) {
+        user.active = false
+      }
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const activateUser = async (id: number): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      await userService.activateUser(id)
+      // Mettre à jour le statut dans la liste
+      const user = users.value.find(u => u.id === id)
+      if (user) {
+        user.active = true
+      }
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Utilitaires
   const clearError = (): void => {
     error.value = null
@@ -156,6 +293,7 @@ export const useSafebaseStore = defineStore('safebase', () => {
     databases,
     backups,
     schedules,
+    users,
     loading,
     error,
     
@@ -168,11 +306,16 @@ export const useSafebaseStore = defineStore('safebase', () => {
     completedBackups,
     pendingBackups,
     failedBackups,
+    userCount,
+    activeUsers,
+    inactiveUsers,
+    adminUsers,
     
     // Actions - Databases
     fetchDatabases,
     addDatabase,
     updateDatabase,
+    updateDatabaseAsync,
     removeDatabase,
     
     // Actions - Backups
@@ -187,6 +330,15 @@ export const useSafebaseStore = defineStore('safebase', () => {
     addSchedule,
     updateSchedule,
     removeSchedule,
+    
+    // Actions - Users (Admin)
+    fetchUsers,
+    fetchActiveUsers,
+    fetchUserById,
+    updateUser,
+    changeUserRole,
+    deactivateUser,
+    activateUser,
     
     // Utilitaires
     clearError,

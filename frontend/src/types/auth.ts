@@ -12,6 +12,7 @@ export interface User {
   firstname: string
   lastname: string
   email: string
+  active: boolean
   role_id: number
   role?: Role // Objet role complet du backend
   created_at: string

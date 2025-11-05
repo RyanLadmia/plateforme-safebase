@@ -51,6 +51,7 @@ func main() {
 	databaseRepo := repositories.NewDatabaseRepository(database)
 	backupRepo := repositories.NewBackupRepository(database)
 	scheduleRepo := repositories.NewScheduleRepository(database)
+	roleRepo := repositories.NewRoleRepository(database)
 
 	// Initialize services (business logic)
 	authService := services.NewAuthService(
@@ -65,6 +66,7 @@ func main() {
 	backupService := services.NewBackupService(backupRepo, databaseRepo, backupDir)
 	databaseService := services.NewDatabaseService(databaseRepo)
 	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
+	userService := services.NewUserService(userRepo, roleRepo)
 
 	// Set database service in backup service (to avoid circular dependency)
 	backupService.SetDatabaseService(databaseService)
@@ -85,6 +87,7 @@ func main() {
 	databaseHandler := handlers.NewDatabaseHandler(databaseService)
 	backupHandler := handlers.NewBackupHandler(backupService)
 	scheduleHandler := handlers.NewScheduleHandler(scheduleService)
+	userHandler := handlers.NewUserHandler(userService)
 
 	// Initialize middleware
 	authMiddleware := middlewares.NewAuthMiddleware(cfg.JWT_SECRET)
@@ -147,6 +150,7 @@ func main() {
 	routes.SetupDatabaseRoutes(server, databaseHandler, authMiddleware)
 	routes.SetupBackupRoutes(server, backupHandler, authMiddleware)
 	routes.SetupScheduleRoutes(server, scheduleHandler, authMiddleware)
+	routes.UserRoutes(server, userHandler, authMiddleware)
 
 	// Start the cron scheduler and load active schedules
 	scheduleService.StartScheduler()
@@ -180,7 +184,14 @@ func main() {
 	fmt.Printf("   GET  /api/schedules                     - Get user schedules\n")
 	fmt.Printf("   GET  /api/schedules/:id                 - Get schedule by ID\n")
 	fmt.Printf("   PUT  /api/schedules/:id                 - Update schedule\n")
-	fmt.Printf("   DELETE /api/schedules/:id               - Delete schedule\n" + config.Reset)
+	fmt.Printf("   DELETE /api/schedules/:id               - Delete schedule\n")
+	fmt.Printf("   GET  /api/admin/users                   - Get all users (admin)\n")
+	fmt.Printf("   GET  /api/admin/users/active            - Get active users (admin)\n")
+	fmt.Printf("   GET  /api/admin/users/:id               - Get user by ID (admin)\n")
+	fmt.Printf("   PUT  /api/admin/users/:id               - Update user (admin)\n")
+	fmt.Printf("   PUT  /api/admin/users/:id/role          - Change user role (admin)\n")
+	fmt.Printf("   PUT  /api/admin/users/:id/deactivate    - Deactivate user (admin)\n")
+	fmt.Printf("   PUT  /api/admin/users/:id/activate      - Activate user (admin)\n" + config.Reset)
 
 	if err := server.Run(":" + port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)

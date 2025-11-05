@@ -26,12 +26,42 @@ func (r *UserRepository) CreateUser(user *models.User) error {
 }
 
 // Get all users
-func (r *UserRepository) GetAllUsersById(id uint) ([]models.User, error) {
+func (r *UserRepository) GetAllUsers() ([]models.User, error) {
 	var users []models.User
-	if err := r.db.Preload("Role").Find(&users, id).Error; err != nil {
+	if err := r.db.Preload("Role").Find(&users).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
+}
+
+// Get all active users
+func (r *UserRepository) GetAllActiveUsers() ([]models.User, error) {
+	var users []models.User
+	if err := r.db.Preload("Role").Where("active = ?", true).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// Deactivate user (soft delete alternative)
+func (r *UserRepository) DeactivateUser(id uint) error {
+	return r.db.Model(&models.User{}).
+		Where("id = ?", id).
+		Update("active", false).
+		Error
+}
+
+// Activate user
+func (r *UserRepository) ActivateUser(id uint) error {
+	return r.db.Model(&models.User{}).
+		Where("id = ?", id).
+		Update("active", true).
+		Error
+}
+
+// Hard delete user (use with caution)
+func (r *UserRepository) DeleteUser(id uint) error {
+	return r.db.Delete(&models.User{}, id).Error
 }
 
 // Get user by id

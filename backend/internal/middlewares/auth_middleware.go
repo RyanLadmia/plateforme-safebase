@@ -66,3 +66,31 @@ func (am *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// RequireRole vérifie que l'utilisateur a le rôle requis
+func (am *AuthMiddleware) RequireRole(requiredRole string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Récupère le rôle depuis le contexte (défini par RequireAuth)
+		userRole, exists := c.Get("user_role")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "role information missing"})
+			c.Abort()
+			return
+		}
+
+		roleStr, ok := userRole.(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid role format"})
+			c.Abort()
+			return
+		}
+
+		if roleStr != requiredRole {
+			c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
