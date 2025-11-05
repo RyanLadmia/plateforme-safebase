@@ -99,6 +99,11 @@ func (s *AuthService) Login(email, password string) (string, error) {
 		return "", errors.New("invalid email or password")
 	}
 
+	// Check if user is active
+	if !user.Active {
+		return "", errors.New("account is disabled")
+	}
+
 	// OPTIMISATION 1: Nettoyer les sessions expirées avant de créer une nouvelle
 	if err := s.sessionRepo.DeleteExpiredSessions(); err != nil {
 		log.Printf("Avertissement: Impossible de nettoyer les sessions expirées: %v", err)
@@ -157,6 +162,11 @@ func (s *AuthService) GetUserFromToken(tokenString string) (*models.User, error)
 	user, err := s.userRepo.GetUserById(userID)
 	if err != nil {
 		return nil, errors.New("user not found")
+	}
+
+	// Check if user is active
+	if !user.Active {
+		return nil, errors.New("account is disabled")
 	}
 
 	return user, nil
