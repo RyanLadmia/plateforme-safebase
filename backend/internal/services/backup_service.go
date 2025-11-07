@@ -25,16 +25,18 @@ type WorkerPoolInterface interface {
 type BackupService struct {
 	backupRepo      *repositories.BackupRepository
 	databaseService *DatabaseService
+	userService     *UserService
 	backupDir       string
 	workerPool      WorkerPoolInterface
-	minioService    *MinIOService // Optional MinIO service for cloud storage
+	minioService    *MinIOService // Required MinIO service for cloud storage
 }
 
 // Constructor for BackupService
-func NewBackupService(backupRepo *repositories.BackupRepository, databaseService *DatabaseService, backupDir string) *BackupService {
+func NewBackupService(backupRepo *repositories.BackupRepository, databaseService *DatabaseService, userService *UserService, backupDir string) *BackupService {
 	return &BackupService{
 		backupRepo:      backupRepo,
 		databaseService: databaseService,
+		userService:     userService,
 		backupDir:       backupDir,
 	}
 }
@@ -243,24 +245,33 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 		return
 	}
 
-	// Create backup directory if it doesn't exist
+	// Get user information for MinIO path
+	user, err := s.userService.GetUserByID(database.UserId)
+	if err != nil {
+		fmt.Printf("[BACKUP] Failed to get user information: %v\n", err)
+		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la récupération des informations utilisateur: %v", err))
+		return
+	}
+
+	// Create backup directory if it doesn't exist (temporary for dump creation)
 	if err := os.MkdirAll(s.backupDir, 0755); err != nil {
 		fmt.Printf("[BACKUP] Failed to create backup directory: %v\n", err)
 		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la création du répertoire: %v", err))
 		return
 	}
 
-	var filepath string
-	var err error
+	var backupFilepath string
 
 	// Execute backup based on database type
 	switch dbType := database.Type; dbType {
 	case "mysql":
 		sqlFilename := strings.TrimSuffix(backup.Filename, ".zip") + ".sql"
-		filepath, err = s.dumpMySQL(database, s.backupDir, sqlFilename)
+		dbTypeDir := filepath.Join(s.backupDir, "mysql")
+		backupFilepath, err = s.dumpMySQL(database, dbTypeDir, sqlFilename)
 	case "postgresql":
 		sqlFilename := strings.TrimSuffix(backup.Filename, ".zip") + ".sql"
-		filepath, err = s.dumpPostgreSQL(database, s.backupDir, sqlFilename)
+		dbTypeDir := filepath.Join(s.backupDir, "postgresql")
+		backupFilepath, err = s.dumpPostgreSQL(database, dbTypeDir, sqlFilename)
 	default:
 		err = fmt.Errorf("type de base de données non supporté: %s", dbType)
 	}
@@ -272,48 +283,66 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 	}
 
 	// Compress the SQL file to ZIP
-	zipFilePath := strings.TrimSuffix(filepath, ".sql") + ".zip"
-	fmt.Printf("[BACKUP] Compressing SQL file to ZIP: %s -> %s\n", filepath, zipFilePath)
+	zipFilePath := strings.TrimSuffix(backupFilepath, ".sql") + ".zip"
+	fmt.Printf("[BACKUP] Compressing SQL file to ZIP: %s -> %s\n", backupFilepath, zipFilePath)
 
-	if err := s.zipFile(filepath, zipFilePath); err != nil {
+	if err := s.zipFile(backupFilepath, zipFilePath); err != nil {
 		fmt.Printf("[BACKUP] Failed to compress backup file: %v\n", err)
 		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la compression: %v", err))
 		return
 	}
 
 	// Remove the original SQL file after successful compression
-	if err := os.Remove(filepath); err != nil {
+	if err := os.Remove(backupFilepath); err != nil {
 		fmt.Printf("[BACKUP] Warning: failed to remove original SQL file: %v\n", err)
 		// Don't fail the backup for this
 	}
 
 	// Update filepath to point to the ZIP file
-	filepath = zipFilePath
+	backupFilepath = zipFilePath
 
 	// Get file size
-	fileInfo, err := os.Stat(filepath)
+	fileInfo, err := os.Stat(backupFilepath)
 	if err != nil {
 		fmt.Printf("[BACKUP] Failed to get file info: %v\n", err)
 		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la récupération des informations du fichier: %v", err))
 		return
 	}
 
-	// Upload to MinIO if service is available
+	// Upload to MinIO (required for cloud storage)
 	var minioObjectName string
 	if s.minioService != nil {
-		minioObjectName = s.minioService.GenerateObjectName(database.Name, "sql")
-		if err := s.minioService.UploadFileFromPath(filepath, minioObjectName); err != nil {
+		username := fmt.Sprintf("%s %s", user.Firstname, user.Lastname)
+		minioObjectName = s.minioService.GenerateObjectName(username, database.Type, backup.Filename)
+		if err := s.minioService.UploadFileFromPath(backupFilepath, minioObjectName); err != nil {
 			fmt.Printf("[BACKUP] Failed to upload to MinIO: %v\n", err)
-			// Continue with local storage as fallback
+			s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de l'upload vers MinIO: %v", err))
+			return
 		} else {
 			fmt.Printf("[BACKUP] Successfully uploaded backup to MinIO: %s\n", minioObjectName)
 		}
+	} else {
+		fmt.Printf("[BACKUP] MinIO service not available - backup failed\n")
+		s.updateBackupError(backup.Id, "Service MinIO non disponible")
+		return
+	}
+
+	// Clean up local temporary file after successful upload
+	if err := os.Remove(backupFilepath); err != nil {
+		fmt.Printf("[BACKUP] Warning: failed to remove temporary local file: %v\n", err)
+		// Don't fail the backup for this
 	}
 
 	// Update backup record with success information
 	backup.Status = "completed"
-	backup.Filepath = filepath
+	backup.Filepath = minioObjectName // Store MinIO path instead of local path
 	backup.Size = fileInfo.Size()
+
+	// Store MinIO object name if available
+	if minioObjectName != "" {
+		// You might want to add a field to the Backup model for MinIO object name
+		// For now, we'll store it in a comment or additional field if available
+	}
 
 	// Store MinIO object name if available
 	if minioObjectName != "" {
@@ -328,7 +357,7 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 	}
 
 	// Update filepath and size
-	if err := s.backupRepo.UpdateFileInfo(backup.Id, filepath, fileInfo.Size()); err != nil {
+	if err := s.backupRepo.UpdateFileInfo(backup.Id, backupFilepath, fileInfo.Size()); err != nil {
 		fmt.Printf("[BACKUP] Failed to update file info: %v\n", err)
 		return
 	}
@@ -643,25 +672,22 @@ func (s *BackupService) DownloadBackup(id uint, userID uint) ([]byte, error) {
 		return nil, fmt.Errorf("accès non autorisé à cette sauvegarde")
 	}
 
-	// Try to download from MinIO first if service is available
+	// Try to download from MinIO (required for cloud storage)
 	if s.minioService != nil {
 		// Generate the expected MinIO object name
-		// This is a simplified approach - you might want to store the MinIO object name in the database
-		database, err := s.databaseService.GetDatabaseByID(backup.DatabaseId)
-		if err == nil {
-			objectName := fmt.Sprintf("backups/%s/%s.sql", database.Name, backup.Filename)
+		database, dbErr := s.databaseService.GetDatabaseByID(backup.DatabaseId)
+		user, userErr := s.userService.GetUserByID(backup.UserId)
+		if dbErr == nil && userErr == nil {
+			username := fmt.Sprintf("%s %s", user.Firstname, user.Lastname)
+			objectName := s.minioService.GenerateObjectName(username, database.Type, backup.Filename)
 			if exists, _ := s.minioService.FileExists(objectName); exists {
 				return s.minioService.DownloadFile(objectName)
 			}
 		}
 	}
 
-	// Fallback to local file
-	if _, err := os.Stat(backup.Filepath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("fichier de sauvegarde introuvable")
-	}
-
-	return os.ReadFile(backup.Filepath)
+	// If MinIO is not available or file doesn't exist, return error
+	return nil, fmt.Errorf("fichier de sauvegarde non trouvé dans le stockage cloud")
 }
 
 // DeleteBackup deletes a backup file and record (from both MinIO and local storage)
@@ -676,23 +702,22 @@ func (s *BackupService) DeleteBackup(id uint, userID uint) error {
 		return fmt.Errorf("accès non autorisé à cette sauvegarde")
 	}
 
-	// Try to delete from MinIO if service is available
+	// Delete from MinIO (required for cloud storage)
 	if s.minioService != nil {
-		database, err := s.databaseService.GetDatabaseByID(backup.DatabaseId)
-		if err == nil {
-			objectName := fmt.Sprintf("backups/%s/%s.sql", database.Name, backup.Filename)
+		database, dbErr := s.databaseService.GetDatabaseByID(backup.DatabaseId)
+		user, userErr := s.userService.GetUserByID(backup.UserId)
+		if dbErr == nil && userErr == nil {
+			username := fmt.Sprintf("%s %s", user.Firstname, user.Lastname)
+			objectName := s.minioService.GenerateObjectName(username, database.Type, backup.Filename)
 			if err := s.minioService.DeleteFile(objectName); err != nil {
-				// Log error but continue with local deletion
 				fmt.Printf("[BACKUP] Warning: failed to delete from MinIO: %v\n", err)
+				return fmt.Errorf("erreur lors de la suppression du fichier cloud: %v", err)
 			}
+		} else {
+			return fmt.Errorf("erreur lors de la récupération des informations: database=%v, user=%v", dbErr, userErr)
 		}
-	}
-
-	// Delete local file if it exists
-	if _, err := os.Stat(backup.Filepath); err == nil {
-		if err := os.Remove(backup.Filepath); err != nil {
-			return fmt.Errorf("erreur lors de la suppression du fichier: %v", err)
-		}
+	} else {
+		return fmt.Errorf("service MinIO non disponible")
 	}
 
 	// Delete record from database

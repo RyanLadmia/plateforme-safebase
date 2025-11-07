@@ -10,10 +10,10 @@ import (
 // GetMinIOConfig returns MinIO configuration from environment variables
 func GetMinIOConfig() *services.MinIOConfig {
 	return &services.MinIOConfig{
-		Endpoint:        getEnv("MINIO_ENDPOINT", "localhost:9001"),
+		Endpoint:        getEnv("MINIO_ENDPOINT", "localhost:9000"),
 		AccessKeyID:     getEnv("MINIO_ACCESS_KEY", "minioadmin"),
 		SecretAccessKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
-		BucketName:      getEnv("MINIO_BUCKET", "SafeBase"),
+		BucketName:      getEnv("MINIO_BUCKET", "safebase"),
 		UseSSL:          getEnvAsBool("MINIO_USE_SSL", false),
 	}
 }

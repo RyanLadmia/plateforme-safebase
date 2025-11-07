@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -38,6 +37,9 @@ func NewMinIOService(config MinIOConfig) (*MinIOService, error) {
 	client, err := minio.New(config.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
 		Secure: config.UseSSL,
+		// Region should be specified in Options.Region if needed by your MinIO setup.
+		// Do NOT pass the region as the session token (3rd param of NewStaticV4).
+		Region: "",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MinIO client: %v", err)
@@ -186,9 +188,8 @@ func (s *MinIOService) GetFileInfo(objectName string) (*minio.ObjectInfo, error)
 }
 
 // GenerateObjectName generates a unique object name for MinIO storage
-func (s *MinIOService) GenerateObjectName(databaseName, fileType string) string {
-	timestamp := time.Now().Format("20060102_150405")
-	return fmt.Sprintf("backups/%s/%s_%s.%s", databaseName, databaseName, timestamp, fileType)
+func (s *MinIOService) GenerateObjectName(username, dbType, filename string) string {
+	return fmt.Sprintf("%s/%s/%s", username, dbType, filename)
 }
 
 // getContentType determines content type based on file extension

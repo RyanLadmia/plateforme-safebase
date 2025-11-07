@@ -65,9 +65,9 @@ func main() {
 	// Initialize backup service with backup directory
 	backupDir := filepath.Join(".", "db", "backups")
 	databaseService := services.NewDatabaseService(databaseRepo)
-	backupService := services.NewBackupService(backupRepo, databaseService, backupDir)
-	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
 	userService := services.NewUserService(userRepo, roleRepo)
+	backupService := services.NewBackupService(backupRepo, databaseService, userService, backupDir)
+	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
 
 	// Initialize MinIO service for cloud storage
 	minioConfig := config.GetMinIOConfig()
