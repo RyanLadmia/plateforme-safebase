@@ -64,8 +64,8 @@ func main() {
 
 	// Initialize backup service with backup directory
 	backupDir := filepath.Join(".", "db", "backups")
-	backupService := services.NewBackupService(backupRepo, databaseRepo, backupDir)
 	databaseService := services.NewDatabaseService(databaseRepo)
+	backupService := services.NewBackupService(backupRepo, databaseService, backupDir)
 	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
 	userService := services.NewUserService(userRepo, roleRepo)
 

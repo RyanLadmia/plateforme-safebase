@@ -23,19 +23,19 @@ type WorkerPoolInterface interface {
 }
 
 type BackupService struct {
-	backupRepo   *repositories.BackupRepository
-	databaseRepo *repositories.DatabaseRepository
-	backupDir    string
-	workerPool   WorkerPoolInterface
-	minioService *MinIOService // Optional MinIO service for cloud storage
+	backupRepo      *repositories.BackupRepository
+	databaseService *DatabaseService
+	backupDir       string
+	workerPool      WorkerPoolInterface
+	minioService    *MinIOService // Optional MinIO service for cloud storage
 }
 
 // Constructor for BackupService
-func NewBackupService(backupRepo *repositories.BackupRepository, databaseRepo *repositories.DatabaseRepository, backupDir string) *BackupService {
+func NewBackupService(backupRepo *repositories.BackupRepository, databaseService *DatabaseService, backupDir string) *BackupService {
 	return &BackupService{
-		backupRepo:   backupRepo,
-		databaseRepo: databaseRepo,
-		backupDir:    backupDir,
+		backupRepo:      backupRepo,
+		databaseService: databaseService,
+		backupDir:       backupDir,
 	}
 }
 
@@ -191,7 +191,7 @@ func (s *BackupService) findExecutable(paths []string) (string, error) {
 // CreateBackup creates a backup for the specified database asynchronously
 func (s *BackupService) CreateBackup(databaseID uint, userID uint) (*models.Backup, error) {
 	// Get database info with decrypted password
-	database, err := s.databaseRepo.GetByID(databaseID)
+	database, err := s.databaseService.GetDatabaseByID(databaseID)
 	if err != nil {
 		return nil, fmt.Errorf("database not found: %v", err)
 	}
@@ -368,9 +368,11 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, f
 	isMAMP := strings.Contains(mysqldumpPath, "/Applications/MAMP/")
 
 	// Build mysqldump command with SSL options for remote connections
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("MYSQL_PWD=%s", database.Password))
+
 	args := []string{
 		"-u", database.Username,
-		"-p" + database.Password, // Correctly concatenate password
 		"--single-transaction",
 		"--routines",
 		"--triggers",
@@ -427,6 +429,7 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, f
 	// Try with SSL options first
 	fmt.Printf("[BACKUP] Command args: %v\n", args)
 	cmd := exec.CommandContext(ctx, mysqldumpPath, args...)
+	cmd.Env = env
 
 	output, err := os.Create(dumpFile)
 	if err != nil {
@@ -458,7 +461,6 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, f
 			// Retry with basic args (no SSL options)
 			baseArgs := []string{
 				"-u", database.Username,
-				"-p" + database.Password,
 				"--single-transaction",
 				"--routines",
 				"--triggers",
@@ -473,6 +475,7 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, f
 			baseArgs = append(baseArgs, database.DbName)
 
 			cmd = exec.CommandContext(context.Background(), mysqldumpPath, baseArgs...)
+			cmd.Env = env
 			output2, err := os.Create(dumpFile)
 			if err != nil {
 				return "", fmt.Errorf("erreur lors de la création du fichier de dump: %v", err)
@@ -644,7 +647,7 @@ func (s *BackupService) DownloadBackup(id uint, userID uint) ([]byte, error) {
 	if s.minioService != nil {
 		// Generate the expected MinIO object name
 		// This is a simplified approach - you might want to store the MinIO object name in the database
-		database, err := s.databaseRepo.GetByID(backup.DatabaseId)
+		database, err := s.databaseService.GetDatabaseByID(backup.DatabaseId)
 		if err == nil {
 			objectName := fmt.Sprintf("backups/%s/%s.sql", database.Name, backup.Filename)
 			if exists, _ := s.minioService.FileExists(objectName); exists {
@@ -675,7 +678,7 @@ func (s *BackupService) DeleteBackup(id uint, userID uint) error {
 
 	// Try to delete from MinIO if service is available
 	if s.minioService != nil {
-		database, err := s.databaseRepo.GetByID(backup.DatabaseId)
+		database, err := s.databaseService.GetDatabaseByID(backup.DatabaseId)
 		if err == nil {
 			objectName := fmt.Sprintf("backups/%s/%s.sql", database.Name, backup.Filename)
 			if err := s.minioService.DeleteFile(objectName); err != nil {
