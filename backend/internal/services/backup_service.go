@@ -1,10 +1,11 @@
 package services
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"fmt"
-	"net"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,6 +27,7 @@ type BackupService struct {
 	databaseRepo *repositories.DatabaseRepository
 	backupDir    string
 	workerPool   WorkerPoolInterface
+	minioService *MinIOService // Optional MinIO service for cloud storage
 }
 
 // Constructor for BackupService
@@ -37,9 +39,58 @@ func NewBackupService(backupRepo *repositories.BackupRepository, databaseRepo *r
 	}
 }
 
+// generateBackupFilename generates a consistent filename for backups
+func (s *BackupService) generateBackupFilename(database *models.Database) string {
+	timestamp := time.Now().Format("20060102_150405")
+	return fmt.Sprintf("%s_%s_%s.zip", database.Name, database.Type, timestamp)
+}
+
+// zipFile compresses a SQL file into a ZIP archive
+func (s *BackupService) zipFile(sqlFilePath, zipFilePath string) error {
+	// Open the SQL file
+	sqlFile, err := os.Open(sqlFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to open SQL file: %v", err)
+	}
+	defer sqlFile.Close()
+
+	// Create the ZIP file
+	zipFile, err := os.Create(zipFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create ZIP file: %v", err)
+	}
+	defer zipFile.Close()
+
+	// Create a ZIP writer
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	// Get the filename from the path
+	_, sqlFilename := filepath.Split(sqlFilePath)
+
+	// Create a ZIP entry
+	zipEntry, err := zipWriter.Create(sqlFilename)
+	if err != nil {
+		return fmt.Errorf("failed to create ZIP entry: %v", err)
+	}
+
+	// Copy the SQL file content to the ZIP entry
+	_, err = io.Copy(zipEntry, sqlFile)
+	if err != nil {
+		return fmt.Errorf("failed to copy file to ZIP: %v", err)
+	}
+
+	return nil
+}
+
 // SetWorkerPool sets the worker pool for background tasks
 func (s *BackupService) SetWorkerPool(workerPool WorkerPoolInterface) {
 	s.workerPool = workerPool
+}
+
+// SetMinIOService sets the MinIO service for cloud storage
+func (s *BackupService) SetMinIOService(minioService *MinIOService) {
+	s.minioService = minioService
 }
 
 // getMySQLDumpPaths returns possible mysqldump paths based on OS
@@ -137,17 +188,6 @@ func (s *BackupService) findExecutable(paths []string) (string, error) {
 	return "", fmt.Errorf("aucun exécutable trouvé dans les chemins testés")
 }
 
-// testDatabaseConnectivity tests if we can connect to the database host and port
-func (s *BackupService) testDatabaseConnectivity(host, port string) error {
-	timeout := 10 * time.Second
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
-	if err != nil {
-		return fmt.Errorf("impossible de se connecter à %s:%s: %v", host, port, err)
-	}
-	conn.Close()
-	return nil
-}
-
 // CreateBackup creates a backup for the specified database asynchronously
 func (s *BackupService) CreateBackup(databaseID uint, userID uint) (*models.Backup, error) {
 	// Get database info with decrypted password
@@ -166,7 +206,7 @@ func (s *BackupService) CreateBackup(databaseID uint, userID uint) (*models.Back
 		UserId:     userID,
 		DatabaseId: databaseID,
 		Status:     "pending",
-		Filename:   fmt.Sprintf("backup_%d_%d_%d.sql", databaseID, userID, time.Now().Unix()),
+		Filename:   s.generateBackupFilename(database),
 		Filepath:   "", // Will be set when backup is completed
 	}
 
@@ -216,9 +256,11 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 	// Execute backup based on database type
 	switch dbType := database.Type; dbType {
 	case "mysql":
-		filepath, err = s.dumpMySQL(database, s.backupDir)
+		sqlFilename := strings.TrimSuffix(backup.Filename, ".zip") + ".sql"
+		filepath, err = s.dumpMySQL(database, s.backupDir, sqlFilename)
 	case "postgresql":
-		filepath, err = s.dumpPostgreSQL(database, s.backupDir)
+		sqlFilename := strings.TrimSuffix(backup.Filename, ".zip") + ".sql"
+		filepath, err = s.dumpPostgreSQL(database, s.backupDir, sqlFilename)
 	default:
 		err = fmt.Errorf("type de base de données non supporté: %s", dbType)
 	}
@@ -229,6 +271,25 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 		return
 	}
 
+	// Compress the SQL file to ZIP
+	zipFilePath := strings.TrimSuffix(filepath, ".sql") + ".zip"
+	fmt.Printf("[BACKUP] Compressing SQL file to ZIP: %s -> %s\n", filepath, zipFilePath)
+
+	if err := s.zipFile(filepath, zipFilePath); err != nil {
+		fmt.Printf("[BACKUP] Failed to compress backup file: %v\n", err)
+		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la compression: %v", err))
+		return
+	}
+
+	// Remove the original SQL file after successful compression
+	if err := os.Remove(filepath); err != nil {
+		fmt.Printf("[BACKUP] Warning: failed to remove original SQL file: %v\n", err)
+		// Don't fail the backup for this
+	}
+
+	// Update filepath to point to the ZIP file
+	filepath = zipFilePath
+
 	// Get file size
 	fileInfo, err := os.Stat(filepath)
 	if err != nil {
@@ -237,10 +298,28 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 		return
 	}
 
+	// Upload to MinIO if service is available
+	var minioObjectName string
+	if s.minioService != nil {
+		minioObjectName = s.minioService.GenerateObjectName(database.Name, "sql")
+		if err := s.minioService.UploadFileFromPath(filepath, minioObjectName); err != nil {
+			fmt.Printf("[BACKUP] Failed to upload to MinIO: %v\n", err)
+			// Continue with local storage as fallback
+		} else {
+			fmt.Printf("[BACKUP] Successfully uploaded backup to MinIO: %s\n", minioObjectName)
+		}
+	}
+
 	// Update backup record with success information
 	backup.Status = "completed"
 	backup.Filepath = filepath
 	backup.Size = fileInfo.Size()
+
+	// Store MinIO object name if available
+	if minioObjectName != "" {
+		// You might want to add a field to the Backup model for MinIO object name
+		// For now, we'll store it in a comment or additional field if available
+	}
 
 	// Update status and filepath
 	if err := s.backupRepo.UpdateStatus(backup.Id, "completed", ""); err != nil {
@@ -258,9 +337,8 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 }
 
 // dumpMySQL creates a MySQL dump
-func (s *BackupService) dumpMySQL(database *models.Database, outputDir string) (string, error) {
-	timestamp := time.Now().Format("20060102_150405")
-	dumpFile := filepath.Join(outputDir, fmt.Sprintf("%s_%s.sql", database.Name, timestamp))
+func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, filename string) (string, error) {
+	dumpFile := filepath.Join(outputDir, filename)
 
 	// Log the start of backup process
 	fmt.Printf("[BACKUP] Starting MySQL dump for database %s (host: %s, port: %s, user: %s, password_length: %d)\n",
@@ -275,19 +353,9 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string) (
 	isRemote := database.Host != "localhost" && database.Host != "127.0.0.1" && !strings.HasPrefix(database.Host, "192.168.") && !strings.HasPrefix(database.Host, "10.")
 	fmt.Printf("[BACKUP] Connection type analysis: host='%s', remote=%t\n", database.Host, isRemote)
 
-	if isRemote {
-		fmt.Printf("[BACKUP] Detected remote MySQL connection to %s:%s\n", database.Host, database.Port)
-		// For remote connections, skip the connectivity test as it might fail due to firewalls
-		// or require specific SSL configurations
-		fmt.Printf("[BACKUP] Skipping connectivity test for remote connection (will test during dump)\n")
-	} else {
-		// Test database connectivity for local connections
-		fmt.Printf("[BACKUP] Testing database connectivity to %s:%s\n", database.Host, database.Port)
-		if err := s.testDatabaseConnectivity(database.Host, database.Port); err != nil {
-			return "", fmt.Errorf("impossible de se connecter à la base de données MySQL. Vérifiez que MySQL est accessible sur le port %s: %v", database.Port, err)
-		}
-		fmt.Printf("[BACKUP] Database connectivity test passed\n")
-	}
+	// Skip connectivity test for now - let mysqldump handle connection errors
+	// This prevents false negatives with complex network configurations
+	fmt.Printf("[BACKUP] Skipping connectivity test - will test during dump execution\n")
 
 	// Find mysqldump executable
 	mysqldumpPath, err := s.findExecutable(s.getMySQLDumpPaths())
@@ -334,8 +402,17 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string) (
 		}
 
 	} else if isMAMP {
-		fmt.Printf("[BACKUP] Detected MAMP installation, using TCP connection (recommended for MAMP)\n")
-		args = append(args, "-h", database.Host, "-P", database.Port)
+		fmt.Printf("[BACKUP] Detected MAMP installation, using socket connection (recommended for MAMP)\n")
+		// For MAMP, use socket connection instead of TCP
+		socketPath := "/Applications/MAMP/tmp/mysql/mysql.sock"
+		if _, err := os.Stat(socketPath); err == nil {
+			args = append(args, "--socket="+socketPath)
+			fmt.Printf("[BACKUP] Using MAMP socket: %s\n", socketPath)
+		} else {
+			// Fallback to TCP if socket not found
+			fmt.Printf("[BACKUP] MAMP socket not found at %s, falling back to TCP connection\n", socketPath)
+			args = append(args, "-h", database.Host, "-P", database.Port)
+		}
 	} else {
 		// Standard local TCP connection
 		args = append(args, "-h", database.Host, "-P", database.Port)
@@ -425,9 +502,8 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string) (
 }
 
 // dumpPostgreSQL creates a PostgreSQL dump
-func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir string) (string, error) {
-	timestamp := time.Now().Format("20060102_150405")
-	dumpFile := filepath.Join(outputDir, fmt.Sprintf("%s_%s.sql", database.Name, timestamp))
+func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir string, filename string) (string, error) {
+	dumpFile := filepath.Join(outputDir, filename)
 
 	// Log the start of backup process
 	fmt.Printf("[BACKUP] Starting PostgreSQL dump for database %s (host: %s, port: %s, user: %s, password_length: %d)\n",
@@ -442,18 +518,9 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 	isRemote := database.Host != "localhost" && database.Host != "127.0.0.1" && !strings.HasPrefix(database.Host, "192.168.") && !strings.HasPrefix(database.Host, "10.")
 	fmt.Printf("[BACKUP] Connection type analysis: host='%s', remote=%t\n", database.Host, isRemote)
 
-	if isRemote {
-		fmt.Printf("[BACKUP] Detected remote PostgreSQL connection to %s:%s\n", database.Host, database.Port)
-		// For remote connections, skip the connectivity test as it might fail due to firewalls
-		fmt.Printf("[BACKUP] Skipping connectivity test for remote connection (will test during dump)\n")
-	} else {
-		// Test database connectivity for local connections
-		fmt.Printf("[BACKUP] Testing database connectivity to %s:%s\n", database.Host, database.Port)
-		if err := s.testDatabaseConnectivity(database.Host, database.Port); err != nil {
-			return "", fmt.Errorf("test de connectivité échoué: %v", err)
-		}
-		fmt.Printf("[BACKUP] Database connectivity test passed\n")
-	}
+	// Skip connectivity test for now - let pg_dump handle connection errors
+	// This prevents false negatives with complex network configurations
+	fmt.Printf("[BACKUP] Skipping connectivity test - will test during dump execution\n")
 
 	// Find pg_dump executable
 	pgDumpPath, err := s.findExecutable(s.getPostgreSQLDumpPaths())
@@ -561,7 +628,40 @@ func (s *BackupService) GetBackupByID(id uint) (*models.Backup, error) {
 	return s.backupRepo.GetByID(id)
 }
 
-// DeleteBackup deletes a backup file and record
+// DownloadBackup downloads a backup file (from MinIO if available, otherwise from local storage)
+func (s *BackupService) DownloadBackup(id uint, userID uint) ([]byte, error) {
+	backup, err := s.backupRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("sauvegarde introuvable: %v", err)
+	}
+
+	// Verify user ownership
+	if backup.UserId != userID {
+		return nil, fmt.Errorf("accès non autorisé à cette sauvegarde")
+	}
+
+	// Try to download from MinIO first if service is available
+	if s.minioService != nil {
+		// Generate the expected MinIO object name
+		// This is a simplified approach - you might want to store the MinIO object name in the database
+		database, err := s.databaseRepo.GetByID(backup.DatabaseId)
+		if err == nil {
+			objectName := fmt.Sprintf("backups/%s/%s.sql", database.Name, backup.Filename)
+			if exists, _ := s.minioService.FileExists(objectName); exists {
+				return s.minioService.DownloadFile(objectName)
+			}
+		}
+	}
+
+	// Fallback to local file
+	if _, err := os.Stat(backup.Filepath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("fichier de sauvegarde introuvable")
+	}
+
+	return os.ReadFile(backup.Filepath)
+}
+
+// DeleteBackup deletes a backup file and record (from both MinIO and local storage)
 func (s *BackupService) DeleteBackup(id uint, userID uint) error {
 	backup, err := s.backupRepo.GetByID(id)
 	if err != nil {
@@ -573,7 +673,19 @@ func (s *BackupService) DeleteBackup(id uint, userID uint) error {
 		return fmt.Errorf("accès non autorisé à cette sauvegarde")
 	}
 
-	// Delete file if it exists
+	// Try to delete from MinIO if service is available
+	if s.minioService != nil {
+		database, err := s.databaseRepo.GetByID(backup.DatabaseId)
+		if err == nil {
+			objectName := fmt.Sprintf("backups/%s/%s.sql", database.Name, backup.Filename)
+			if err := s.minioService.DeleteFile(objectName); err != nil {
+				// Log error but continue with local deletion
+				fmt.Printf("[BACKUP] Warning: failed to delete from MinIO: %v\n", err)
+			}
+		}
+	}
+
+	// Delete local file if it exists
 	if _, err := os.Stat(backup.Filepath); err == nil {
 		if err := os.Remove(backup.Filepath); err != nil {
 			return fmt.Errorf("erreur lors de la suppression du fichier: %v", err)

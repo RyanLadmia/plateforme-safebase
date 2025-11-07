@@ -69,6 +69,17 @@ func main() {
 	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
 	userService := services.NewUserService(userRepo, roleRepo)
 
+	// Initialize MinIO service for cloud storage
+	minioConfig := config.GetMinIOConfig()
+	minioService, err := services.NewMinIOService(*minioConfig)
+	if err != nil {
+		log.Printf(config.Yellow+"Avertissement: Impossible d'initialiser MinIO: %v"+config.Reset, err)
+		log.Println(config.Yellow + "Les sauvegardes seront stockées localement uniquement" + config.Reset)
+	} else {
+		log.Println(config.Green + "Service MinIO initialisé avec succès" + config.Reset)
+		backupService.SetMinIOService(minioService)
+	}
+
 	// Nettoyage initial des sessions expirées au démarrage
 	log.Println(config.Yellow + "Nettoyage des sessions expirées..." + config.Reset)
 	if err := authService.CleanupExpiredSessions(); err != nil {
