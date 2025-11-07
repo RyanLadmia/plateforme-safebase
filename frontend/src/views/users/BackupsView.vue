@@ -1,12 +1,10 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <header class="bg-white shadow">
-      <div class="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Mes sauvegardes</h1>
       </div>
-    </header>
 
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <!-- Filters -->
       <div class="bg-white rounded-lg shadow p-4 mb-6">
         <div class="flex flex-wrap gap-2 sm:gap-4">
@@ -133,7 +131,7 @@
           <p class="text-2xl font-bold text-red-600">{{ failedBackups.length }}</p>
         </div>
       </div>
-    </main>
+    </div>
   </div>
 </template>
 

@@ -1,22 +1,16 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow">
-      <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center">
-          <h1 class="text-3xl font-bold text-gray-900">Mon profil</h1>
-          <router-link 
-            to="/user/dashboard" 
-            class="text-blue-600 hover:text-blue-800"
-          >
-            ← Retour au tableau de bord
-          </router-link>
-        </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Mon profil</h1>
+        <router-link 
+          to="/user/dashboard" 
+          class="text-blue-600 hover:text-blue-800"
+        >
+          ← Retour au tableau de bord
+        </router-link>
       </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
       <!-- User Information Card -->
       <div class="bg-white rounded-lg shadow mb-6">
         <div class="px-6 py-4 border-b border-gray-200">
@@ -234,7 +228,7 @@
           </div>
         </div>
       </div>
-    </main>
+    </div>
   </div>
 </template>
 

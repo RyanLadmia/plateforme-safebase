@@ -1,18 +1,14 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <header class="bg-white shadow">
-      <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center">
-          <h1 class="text-3xl font-bold text-gray-900">Administration - Tableau de bord</h1>
-          <div class="flex items-center space-x-4">
-            <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold">ADMIN</span>
-            <span class="text-gray-600">{{ user?.email }}</span>
-          </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Administration - Tableau de bord</h1>
+        <div class="flex items-center space-x-4">
+          <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold">ADMIN</span>
+          <span class="text-gray-600">{{ user?.email }}</span>
         </div>
       </div>
-    </header>
 
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <!-- Admin Navigation -->
       <div class="bg-white rounded-lg shadow mb-6 p-4">
         <nav class="flex space-x-4">
@@ -151,7 +147,7 @@
           </div>
         </div>
       </div>
-    </main>
+    </div>
   </div>
 </template>
 

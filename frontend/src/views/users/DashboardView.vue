@@ -1,25 +1,19 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow">
-      <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center">
-          <h1 class="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-          <div class="flex items-center space-x-4">
-            <span class="text-gray-600">{{ user?.email }}</span>
-            <router-link 
-              to="/user/profile" 
-              class="text-blue-600 hover:text-blue-800"
-            >
-              Mon profil
-            </router-link>
-          </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Tableau de bord</h1>
+        <div class="flex items-center space-x-4">
+          <span class="text-gray-600">{{ user?.email }}</span>
+          <router-link 
+            to="/user/profile" 
+            class="text-blue-600 hover:text-blue-800"
+          >
+            Mon profil
+          </router-link>
         </div>
       </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <!-- Databases Count -->
@@ -162,7 +156,7 @@
           </table>
         </div>
       </div>
-    </main>
+    </div>
   </div>
 </template>
 

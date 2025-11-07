@@ -195,10 +195,17 @@ func (h *BackupHandler) DownloadBackup(c *gin.Context) {
 		return
 	}
 
-	// Serve the file
+	// Download the file data from the service (MinIO or local)
+	fileData, err := h.backupService.DownloadBackup(uint(id), userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors du téléchargement: " + err.Error()})
+		return
+	}
+
+	// Serve the file data directly
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
 	c.Header("Content-Disposition", "attachment; filename="+backup.Filename)
 	c.Header("Content-Type", "application/zip")
-	c.File(backup.Filepath)
+	c.Data(http.StatusOK, "application/zip", fileData)
 }

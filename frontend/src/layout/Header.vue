@@ -1,6 +1,6 @@
 <template>
   <header v-if="initialized" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 shadow-lg sticky top-0 z-50">
-    <div class="container mx-auto">
+    <div class="px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row items-center justify-between">
         <!-- Logo et titre -->
         <div class="text-center md:text-left mb-4 md:mb-0">
@@ -12,68 +12,68 @@
         </div>
         
         <!-- Navigation -->
-        <nav class="flex items-center space-x-2 md:space-x-4">
+        <nav class="flex flex-wrap items-center justify-center md:justify-end gap-2 md:gap-4">
           <!-- Navigation pour utilisateurs authentifiés -->
           <template v-if="isAuthenticated">
             <!-- Lien Dashboard -->
             <RouterLink 
               :to="dashboardLink"
-              class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
+              class="bg-white/10 hover:bg-white/20 px-2 md:px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-1 md:space-x-2"
               active-class="bg-white/30"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
               </svg>
-              <span class="hidden md:inline">{{ isAdmin ? 'Admin' : 'Dashboard' }}</span>
+              <span class="hidden lg:inline">{{ isAdmin ? 'Admin' : 'Dashboard' }}</span>
             </RouterLink>
 
-                        <!-- Lien Gestion utilisateurs (admin uniquement) -->
+            <!-- Lien Gestion utilisateurs (admin uniquement) -->
             <RouterLink 
               v-if="isAdmin"
               to="/admin/users"
-              class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
+              class="bg-white/10 hover:bg-white/20 px-2 md:px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-1 md:space-x-2"
               active-class="bg-white/30"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
               </svg>
-              <span class="hidden md:inline">Utilisateurs</span>
+              <span class="hidden lg:inline">Utilisateurs</span>
             </RouterLink>
 
             <!-- Lien Bases de données (utilisateurs uniquement) -->
             <RouterLink 
               to="/user/databases"
-              class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
+              class="bg-white/10 hover:bg-white/20 px-2 md:px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-1 md:space-x-2"
               active-class="bg-white/30"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
               </svg>
-              <span class="hidden md:inline">Bases de données</span>
+              <span class="hidden lg:inline">Bases de données</span>
             </RouterLink>
 
             <!-- Lien Sauvegardes (utilisateurs uniquement) -->
             <RouterLink 
               to="/user/backups"
-              class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
+              class="bg-white/10 hover:bg-white/20 px-2 md:px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-1 md:space-x-2"
               active-class="bg-white/30"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
               </svg>
-              <span class="hidden md:inline">Sauvegardes</span>
+              <span class="hidden lg:inline">Sauvegardes</span>
             </RouterLink>
 
             <!-- Lien Planifications (utilisateurs uniquement) -->
             <RouterLink 
               to="/user/schedules"
-              class="bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-2"
+              class="bg-white/10 hover:bg-white/20 px-2 md:px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-1 md:space-x-2"
               active-class="bg-white/30"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              <span class="hidden md:inline">Planifications</span>
+              <span class="hidden lg:inline">Planifications</span>
             </RouterLink>
 
             <!-- Dropdown utilisateur -->
