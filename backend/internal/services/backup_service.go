@@ -1,11 +1,9 @@
 package services
 
 import (
-	"archive/zip"
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -18,11 +16,16 @@ import (
 	"github.com/RyanLadmia/plateforme-safebase/internal/repositories"
 )
 
+// WorkerPool interface for background tasks
+type WorkerPoolInterface interface {
+	Submit(task func())
+}
+
 type BackupService struct {
-	backupRepo      *repositories.BackupRepository
-	databaseRepo    *repositories.DatabaseRepository
-	databaseService *DatabaseService
-	backupDir       string
+	backupRepo   *repositories.BackupRepository
+	databaseRepo *repositories.DatabaseRepository
+	backupDir    string
+	workerPool   WorkerPoolInterface
 }
 
 // Constructor for BackupService
@@ -34,15 +37,15 @@ func NewBackupService(backupRepo *repositories.BackupRepository, databaseRepo *r
 	}
 }
 
-// SetDatabaseService sets the database service (to avoid circular dependency)
-func (s *BackupService) SetDatabaseService(databaseService *DatabaseService) {
-	s.databaseService = databaseService
+// SetWorkerPool sets the worker pool for background tasks
+func (s *BackupService) SetWorkerPool(workerPool WorkerPoolInterface) {
+	s.workerPool = workerPool
 }
 
 // getMySQLDumpPaths returns possible mysqldump paths based on OS
 func (s *BackupService) getMySQLDumpPaths() []string {
 	goos := runtime.GOOS
-	paths := []string{}
+	var paths []string
 
 	switch goos {
 	case "darwin": // macOS
@@ -81,7 +84,7 @@ func (s *BackupService) getMySQLDumpPaths() []string {
 // getPostgreSQLDumpPaths returns possible pg_dump paths based on OS
 func (s *BackupService) getPostgreSQLDumpPaths() []string {
 	goos := runtime.GOOS
-	paths := []string{}
+	var paths []string
 
 	switch goos {
 	case "darwin": // macOS
@@ -145,117 +148,109 @@ func (s *BackupService) testDatabaseConnectivity(host, port string) error {
 	return nil
 }
 
-// CreateBackup creates a backup for the specified database
+// CreateBackup creates a backup for the specified database asynchronously
 func (s *BackupService) CreateBackup(databaseID uint, userID uint) (*models.Backup, error) {
 	// Get database info with decrypted password
-	database, err := s.databaseService.GetDatabaseByIDForBackup(databaseID)
+	database, err := s.databaseRepo.GetByID(databaseID)
 	if err != nil {
-		return nil, fmt.Errorf("erreur lors de la récupération de la base de données: %v", err)
+		return nil, fmt.Errorf("database not found: %v", err)
 	}
 
-	// Verify user ownership
+	// Verify that the database belongs to the user
 	if database.UserId != userID {
-		return nil, fmt.Errorf("accès non autorisé à cette base de données")
+		return nil, fmt.Errorf("unauthorized: database does not belong to user")
 	}
 
-	// Generate filename with timestamp
-	timestamp := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("%s_%s_%s.zip", database.Name, database.Type, timestamp)
-
-	// Create backup record
+	// Create backup record with pending status
 	backup := &models.Backup{
-		Filename:   filename,
-		Filepath:   filepath.Join(s.backupDir, database.Type, filename),
-		Status:     "pending",
 		UserId:     userID,
 		DatabaseId: databaseID,
+		Status:     "pending",
+		Filename:   fmt.Sprintf("backup_%d_%d_%d.sql", databaseID, userID, time.Now().Unix()),
+		Filepath:   "", // Will be set when backup is completed
 	}
 
-	// Save backup record to database
 	if err := s.backupRepo.Create(backup); err != nil {
-		return nil, fmt.Errorf("erreur lors de la création de l'enregistrement de sauvegarde: %v", err)
+		return nil, fmt.Errorf("failed to create backup record: %v", err)
 	}
 
-	// Start backup process in goroutine
-	go s.performBackup(backup, database)
+	// Execute backup asynchronously using worker pool
+	if s.workerPool != nil {
+		s.workerPool.Submit(func() {
+			s.executeBackupAsync(backup, database)
+		})
+	} else {
+		go s.executeBackupAsync(backup, database)
+	}
 
 	return backup, nil
 }
 
-// performBackup executes the actual backup process
-func (s *BackupService) performBackup(backup *models.Backup, database *models.Database) {
-	// Protect against panics in goroutine
+// executeBackupAsync executes the backup process asynchronously
+func (s *BackupService) executeBackupAsync(backup *models.Backup, database *models.Database) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("[BACKUP] Panic in backup process: %v\n", r)
-			s.updateBackupError(backup.Id, fmt.Sprintf("Erreur critique lors de la sauvegarde: %v", r))
+			fmt.Printf("[BACKUP] Panic in backup process for ID %d: %v\n", backup.Id, r)
+			s.updateBackupError(backup.Id, fmt.Sprintf("Erreur critique: %v", r))
 		}
 	}()
 
-	fmt.Printf("[BACKUP] Starting backup process for backup ID: %d\n", backup.Id)
+	fmt.Printf("[BACKUP] Starting asynchronous backup process for ID: %d\n", backup.Id)
 
-	var dumpFile string
-	var err error
+	// Update status to running
+	if err := s.backupRepo.UpdateStatus(backup.Id, "running", ""); err != nil {
+		fmt.Printf("[BACKUP] Failed to update status to running: %v\n", err)
+		return
+	}
 
 	// Create backup directory if it doesn't exist
-	backupTypeDir := filepath.Join(s.backupDir, database.Type)
-	if err := os.MkdirAll(backupTypeDir, 0755); err != nil {
-		fmt.Printf("[BACKUP] Failed to create directory: %v\n", err)
+	if err := os.MkdirAll(s.backupDir, 0755); err != nil {
+		fmt.Printf("[BACKUP] Failed to create backup directory: %v\n", err)
 		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la création du répertoire: %v", err))
 		return
 	}
 
-	// Perform database dump based on type
-	switch database.Type {
+	var filepath string
+	var err error
+
+	// Execute backup based on database type
+	switch dbType := database.Type; dbType {
 	case "mysql":
-		dumpFile, err = s.dumpMySQL(database, backupTypeDir)
-	case "postgres", "postgresql":
-		dumpFile, err = s.dumpPostgreSQL(database, backupTypeDir)
+		filepath, err = s.dumpMySQL(database, s.backupDir)
+	case "postgresql":
+		filepath, err = s.dumpPostgreSQL(database, s.backupDir)
 	default:
-		err = fmt.Errorf("type de base de données non supporté: %s", database.Type)
+		err = fmt.Errorf("type de base de données non supporté: %s", dbType)
 	}
 
 	if err != nil {
-		fmt.Printf("[BACKUP] Dump failed: %v\n", err)
-		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors du dump: %v", err))
+		fmt.Printf("[BACKUP] Backup failed for ID %d: %v\n", backup.Id, err)
+		s.updateBackupError(backup.Id, err.Error())
 		return
 	}
-
-	// Create ZIP file
-	zipFile := backup.Filepath
-	fmt.Printf("[BACKUP] Creating ZIP file: %s\n", zipFile)
-	if err := s.createZipFile(dumpFile, zipFile); err != nil {
-		fmt.Printf("[BACKUP] ZIP creation failed: %v\n", err)
-		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la compression: %v", err))
-		// Clean up dump file
-		os.Remove(dumpFile)
-		return
-	}
-
-	// Clean up dump file
-	fmt.Printf("[BACKUP] Cleaning up dump file: %s\n", dumpFile)
-	os.Remove(dumpFile)
 
 	// Get file size
-	fileInfo, err := os.Stat(zipFile)
+	fileInfo, err := os.Stat(filepath)
 	if err != nil {
 		fmt.Printf("[BACKUP] Failed to get file info: %v\n", err)
-		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la lecture des informations du fichier: %v", err))
+		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la récupération des informations du fichier: %v", err))
 		return
 	}
 
-	fmt.Printf("[BACKUP] Backup file size: %d bytes\n", fileInfo.Size())
+	// Update backup record with success information
+	backup.Status = "completed"
+	backup.Filepath = filepath
+	backup.Size = fileInfo.Size()
 
-	// Update backup record
-	if err := s.backupRepo.UpdateSize(backup.Id, fileInfo.Size()); err != nil {
-		fmt.Printf("[BACKUP] Failed to update size: %v\n", err)
-		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la mise à jour de la taille: %v", err))
-		return
-	}
-
+	// Update status and filepath
 	if err := s.backupRepo.UpdateStatus(backup.Id, "completed", ""); err != nil {
-		fmt.Printf("[BACKUP] Failed to update status: %v\n", err)
-		s.updateBackupError(backup.Id, fmt.Sprintf("Erreur lors de la mise à jour du statut: %v", err))
+		fmt.Printf("[BACKUP] Failed to update backup status: %v\n", err)
+		return
+	}
+
+	// Update filepath and size
+	if err := s.backupRepo.UpdateFileInfo(backup.Id, filepath, fileInfo.Size()); err != nil {
+		fmt.Printf("[BACKUP] Failed to update file info: %v\n", err)
 		return
 	}
 
@@ -544,56 +539,6 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 	fmt.Printf("[BACKUP] pg_dump completed successfully\n")
 
 	return dumpFile, nil
-}
-
-// createZipFile compresses a file into a ZIP archive
-func (s *BackupService) createZipFile(sourceFile, zipFile string) error {
-	// Create ZIP file
-	zipFileHandle, err := os.Create(zipFile)
-	if err != nil {
-		return fmt.Errorf("erreur lors de la création du fichier ZIP: %v", err)
-	}
-	defer zipFileHandle.Close()
-
-	// Create ZIP writer
-	zipWriter := zip.NewWriter(zipFileHandle)
-	defer zipWriter.Close()
-
-	// Open source file
-	sourceFileHandle, err := os.Open(sourceFile)
-	if err != nil {
-		return fmt.Errorf("erreur lors de l'ouverture du fichier source: %v", err)
-	}
-	defer sourceFileHandle.Close()
-
-	// Get source file info
-	sourceInfo, err := sourceFileHandle.Stat()
-	if err != nil {
-		return fmt.Errorf("erreur lors de la lecture des informations du fichier source: %v", err)
-	}
-
-	// Create file header
-	header, err := zip.FileInfoHeader(sourceInfo)
-	if err != nil {
-		return fmt.Errorf("erreur lors de la création de l'en-tête ZIP: %v", err)
-	}
-
-	// Set compression method
-	header.Method = zip.Deflate
-
-	// Create writer for file in ZIP
-	writer, err := zipWriter.CreateHeader(header)
-	if err != nil {
-		return fmt.Errorf("erreur lors de la création de l'entrée ZIP: %v", err)
-	}
-
-	// Copy file content to ZIP
-	_, err = io.Copy(writer, sourceFileHandle)
-	if err != nil {
-		return fmt.Errorf("erreur lors de la copie du contenu vers le ZIP: %v", err)
-	}
-
-	return nil
 }
 
 // updateBackupError updates backup status to failed with error message

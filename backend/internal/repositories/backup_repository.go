@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"time"
+
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
 	"gorm.io/gorm"
 )
@@ -52,9 +54,25 @@ func (r *BackupRepository) UpdateStatus(id uint, status string, errorMsg string)
 	}).Error
 }
 
-// Update backup size
-func (r *BackupRepository) UpdateSize(id uint, size int64) error {
-	return r.db.Model(&models.Backup{}).Where("id = ?", id).Update("size", size).Error
+// Update backup filepath and size
+func (r *BackupRepository) UpdateFileInfo(id uint, filepath string, size int64) error {
+	return r.db.Model(&models.Backup{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"filepath": filepath,
+		"size":     size,
+	}).Error
+}
+
+// Get old backups for cleanup (older than specified days)
+func (r *BackupRepository) GetOldBackups(days int) ([]models.Backup, error) {
+	cutoffDate := time.Now().AddDate(0, 0, -days)
+	var backups []models.Backup
+	err := r.db.Where("created_at < ? AND status = ?", cutoffDate, "completed").Find(&backups).Error
+	return backups, err
+}
+
+// GetDB returns the database connection (for advanced queries)
+func (r *BackupRepository) GetDB() *gorm.DB {
+	return r.db
 }
 
 // Delete backup
