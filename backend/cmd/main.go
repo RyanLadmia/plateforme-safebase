@@ -69,15 +69,24 @@ func main() {
 	backupService := services.NewBackupService(backupRepo, databaseService, userService, backupDir)
 	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
 
-	// Initialize MinIO service for cloud storage
-	minioConfig := config.GetMinIOConfig()
-	minioService, err := services.NewMinIOService(*minioConfig)
-	if err != nil {
-		log.Printf(config.Yellow+"Avertissement: Impossible d'initialiser MinIO: %v"+config.Reset, err)
-		log.Println(config.Yellow + "Les sauvegardes seront stockées localement uniquement" + config.Reset)
+	// Initialize Mega service for cloud storage
+	megaConfig := config.GetMegaConfig()
+	if megaConfig.Email != "" && megaConfig.Password != "" {
+		megaService, err := services.NewMegaService(*megaConfig)
+		if err != nil {
+			log.Printf(config.Yellow+"Avertissement: Impossible d'initialiser Mega: %v"+config.Reset, err)
+			log.Println(config.Yellow + "Les sauvegardes seront stockées localement uniquement" + config.Reset)
+		} else {
+			log.Println(config.Green + "Service Mega initialisé avec succès" + config.Reset)
+			backupService.SetCloudStorage(megaService)
+
+			// Initialize encryption service
+			encryptionService := services.NewEncryptionService("SafeBaseMasterKey2025!")
+			backupService.SetEncryptionService(encryptionService)
+			log.Println(config.Green + "Service de chiffrement AES-256 initialisé" + config.Reset)
+		}
 	} else {
-		log.Println(config.Green + "Service MinIO initialisé avec succès" + config.Reset)
-		backupService.SetMinIOService(minioService)
+		log.Println(config.Yellow + "Configuration Mega manquante - stockage local uniquement" + config.Reset)
 	}
 
 	// Nettoyage initial des sessions expirées au démarrage
