@@ -1,6 +1,15 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
-import AppHeader from '@/layout/AppHeader.vue'
+import AppHeader from './layout/Header.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+// Initialiser l'authentification au montage de l'app
+onMounted(async () => {
+  await authStore.checkAuth()
+})
 </script>
 
 <template>

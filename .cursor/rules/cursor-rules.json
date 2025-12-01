@@ -14,6 +14,8 @@
       "always give me an clear explaination of the code you write or you modify"
     ],
     "notes": {
-      "Terminal": "don't use any emoji in the terminal, use only text"
+      "Terminal": "don't use any emoji in the terminal, use only text",
+      "Server": "the backend use air to run the server, so don't use go run main.go",
+      "Markdown": "don't créate any markdown file or documentataion."
     }
   }

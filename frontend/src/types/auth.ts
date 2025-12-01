@@ -1,11 +1,22 @@
 // Types pour l'authentification
 
+export interface Role {
+  id: number
+  name: string
+  created_at: string
+  updated_at: string
+}
+
 export interface User {
   id: number
   firstname: string
   lastname: string
   email: string
+  active: boolean
   role_id: number
+  role?: Role // Objet role complet du backend
+  created_at: string
+  updated_at: string
 }
 
 export interface LoginRequest {
@@ -18,6 +29,7 @@ export interface RegisterRequest {
   lastname: string
   email: string
   password: string
+  confirm_password: string
 }
 
 export interface AuthResponse {

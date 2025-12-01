@@ -18,14 +18,7 @@ const { isAuthenticated, user: currentUser } = storeToRefs(authStore)
       <div class="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800 opacity-10"></div>
       
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div class="text-center">
-          <!-- Logo principal -->
-          <div class="flex justify-center mb-8">
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-full shadow-2xl">
-              <div class="text-6xl">🔐</div>
-            </div>
-          </div>
-          
+        <div class="text-center">  
           <!-- Titre principal -->
           <h1 class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6">
             SafeBase
@@ -44,13 +37,7 @@ const { isAuthenticated, user: currentUser } = storeToRefs(authStore)
 
           <!-- Informations utilisateur si connecté -->
           <div v-if="isAuthenticated" class="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto mb-12">
-            <div class="flex items-center justify-center mb-6">
-              <div class="bg-green-100 p-3 rounded-full">
-                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
+            
             
             <h2 class="text-2xl font-bold text-gray-800 mb-4">
               Bienvenue, {{ currentUser?.firstname }} {{ currentUser?.lastname }} !
@@ -107,28 +94,24 @@ const { isAuthenticated, user: currentUser } = storeToRefs(authStore)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <!-- Feature 1 -->
           <div class="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl hover:shadow-lg transition-shadow duration-200">
-            <div class="text-4xl mb-4">🔒</div>
             <h3 class="text-xl font-semibold text-gray-800 mb-2">Authentification JWT</h3>
             <p class="text-gray-600">Système de tokens sécurisés avec expiration automatique</p>
           </div>
 
           <!-- Feature 2 -->
           <div class="bg-gradient-to-br from-purple-50 to-pink-100 p-6 rounded-xl hover:shadow-lg transition-shadow duration-200">
-            <div class="text-4xl mb-4">👥</div>
             <h3 class="text-xl font-semibold text-gray-800 mb-2">Gestion des rôles</h3>
             <p class="text-gray-600">Système de permissions granulaires par utilisateur</p>
           </div>
 
           <!-- Feature 3 -->
           <div class="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl hover:shadow-lg transition-shadow duration-200">
-            <div class="text-4xl mb-4">🛡️</div>
             <h3 class="text-xl font-semibold text-gray-800 mb-2">Sécurité avancée</h3>
             <p class="text-gray-600">Chiffrement bcrypt et validation stricte</p>
           </div>
 
           <!-- Feature 4 -->
           <div class="bg-gradient-to-br from-yellow-50 to-orange-100 p-6 rounded-xl hover:shadow-lg transition-shadow duration-200">
-            <div class="text-4xl mb-4">⚡</div>
             <h3 class="text-xl font-semibold text-gray-800 mb-2">Performance</h3>
             <p class="text-gray-600">API Go haute performance avec PostgreSQL</p>
           </div>

@@ -39,7 +39,3 @@ func (r *UserRepository) UpdateUserRole(userID uint, newRoleID uint) error {
 		Update("role_id", newRoleID).
 		Error
 }
-
-func (r *RoleRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Role{}, id).Error
-}

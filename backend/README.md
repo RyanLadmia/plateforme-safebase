@@ -57,6 +57,11 @@ air init
 `
 Crée un fichier de config .air.toml à la racine de backend
 
+Installer robfig/cron/v3 :
+`bash
+go get github.com/robfig/cron/v3
+`
+
 ## Lancer le serveur :
 `bash
 air

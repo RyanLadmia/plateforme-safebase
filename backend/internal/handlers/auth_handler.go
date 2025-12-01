@@ -23,10 +23,11 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 
 // Structure pour la requête d'inscription (inclut le mot de passe)
 type RegisterRequest struct {
-	Firstname string `json:"firstname" binding:"required"`
-	Lastname  string `json:"lastname" binding:"required"`
-	Email     string `json:"email" binding:"required,email"`
-	Password  string `json:"password" binding:"required"`
+	Firstname       string `json:"firstname" binding:"required"`
+	Lastname        string `json:"lastname" binding:"required"`
+	Email           string `json:"email" binding:"required,email"`
+	Password        string `json:"password" binding:"required"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
 }
 
 // Register endpoint: POST /auth/register
@@ -36,6 +37,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Printf("Erreur de binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	// Vérifier que les mots de passe correspondent
+	if req.Password != req.ConfirmPassword {
+		log.Printf("Les mots de passe ne correspondent pas pour l'utilisateur: %s", req.Email)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "passwords do not match"})
 		return
 	}
 
@@ -108,15 +116,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Respond with user info (sans le token dans le JSON)
+	// Respond with user info AND token
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Connexion réussie",
+		"token":   token, // Ajout du token dans la réponse
 		"user": gin.H{
 			"id":        user.Id,
 			"firstname": user.Firstname,
 			"lastname":  user.Lastname,
 			"email":     user.Email,
 			"role_id":   user.RoleID,
+			"role":      user.Role, // Inclure le rôle complet
 		},
 	})
 }
@@ -173,6 +183,7 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 			"lastname":  user.Lastname,
 			"email":     user.Email,
 			"role_id":   user.RoleID,
+			"role":      user.Role, // CRUCIAL: Inclure le rôle complet pour que le frontend puisse vérifier user.role.name
 		},
 	})
 }
