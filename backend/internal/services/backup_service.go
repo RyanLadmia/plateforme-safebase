@@ -372,16 +372,6 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 	backup.Filepath = remotePath // Store cloud path
 	backup.Size = fileInfo.Size()
 
-	// Store remote path if available
-	if remotePath != "" {
-		// File is stored encrypted in cloud storage
-	}
-
-	// Store remote path if available
-	if remotePath != "" {
-		// File is stored encrypted in cloud storage
-	}
-
 	// Update status and filepath
 	if err := s.backupRepo.UpdateStatus(backup.Id, "completed", ""); err != nil {
 		fmt.Printf("[BACKUP] Failed to update backup status: %v\n", err)
@@ -389,7 +379,7 @@ func (s *BackupService) executeBackupAsync(backup *models.Backup, database *mode
 	}
 
 	// Update filepath and size
-	if err := s.backupRepo.UpdateFileInfo(backup.Id, backupFilepath, fileInfo.Size()); err != nil {
+	if err := s.backupRepo.UpdateFileInfo(backup.Id, remotePath, fileInfo.Size()); err != nil {
 		fmt.Printf("[BACKUP] Failed to update file info: %v\n", err)
 		return
 	}
@@ -692,7 +682,7 @@ func (s *BackupService) GetBackupByID(id uint) (*models.Backup, error) {
 	return s.backupRepo.GetByID(id)
 }
 
-// DownloadBackup downloads a backup file (from cloud storage with decryption)
+// DownloadBackup downloads a backup file from cloud storage with decryption
 func (s *BackupService) DownloadBackup(id uint, userID uint) ([]byte, error) {
 	backup, err := s.backupRepo.GetByID(id)
 	if err != nil {
@@ -704,30 +694,28 @@ func (s *BackupService) DownloadBackup(id uint, userID uint) ([]byte, error) {
 		return nil, fmt.Errorf("accès non autorisé à cette sauvegarde")
 	}
 
-	// Try to download from cloud storage
-	if s.cloudStorage != nil && s.encryption != nil {
-		// Generate user-specific encryption key
-		userKey := GenerateUserKey(userID, "SafeBaseBackupSalt2025!")
-		userEncryption := NewEncryptionService(userKey)
-
-		// Download encrypted file
-		encryptedData, err := s.cloudStorage.DownloadFile(backup.Filepath)
-		if err != nil {
-			return nil, fmt.Errorf("fichier non trouvé dans le stockage cloud: %v", err)
-		}
-
-		// Decrypt the file
-		fmt.Printf("[BACKUP] Decrypting downloaded backup file...\n")
-		decryptedData, err := userEncryption.DecryptData(encryptedData)
-		if err != nil {
-			return nil, fmt.Errorf("erreur lors du déchiffrement: %v", err)
-		}
-
-		return decryptedData, nil
+	// Check if cloud storage and encryption services are available
+	if s.cloudStorage == nil || s.encryption == nil {
+		return nil, fmt.Errorf("services de stockage cloud ou de chiffrement non disponibles")
 	}
 
-	// If cloud storage is not available, return error
-	return nil, fmt.Errorf("service de stockage cloud non disponible")
+	// Generate user-specific encryption key
+	userKey := GenerateUserKey(userID, "SafeBaseBackupSalt2025!")
+	userEncryption := NewEncryptionService(userKey)
+
+	// Download encrypted file from cloud
+	encryptedData, err := s.cloudStorage.DownloadFile(backup.Filepath)
+	if err != nil {
+		return nil, fmt.Errorf("fichier non trouvé dans le stockage cloud: %v", err)
+	}
+
+	// Decrypt the file
+	decryptedData, err := userEncryption.DecryptData(encryptedData)
+	if err != nil {
+		return nil, fmt.Errorf("erreur lors du déchiffrement: %v", err)
+	}
+
+	return decryptedData, nil
 }
 
 // DeleteBackup deletes a backup file and record (from cloud storage)

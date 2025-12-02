@@ -36,8 +36,8 @@ func main() {
 		&models.Database{}, // Database table
 		&models.Backup{},   // Backup table
 		&models.Schedule{}, // Schedule table
+		&models.Restore{},  // Restore table
 		// &models.Alert{},   // Alert table (for later)
-		// &models.Restore{}, // Restore table (for later)
 	); err != nil {
 		log.Fatalf(config.Red+"Failed to migrate database: %v"+config.Reset, err)
 	}
@@ -53,6 +53,7 @@ func main() {
 	backupRepo := repositories.NewBackupRepository(database)
 	scheduleRepo := repositories.NewScheduleRepository(database)
 	roleRepo := repositories.NewRoleRepository(database)
+	restoreRepo := repositories.NewRestoreRepository(database)
 
 	// Initialize services (business logic)
 	authService := services.NewAuthService(
@@ -68,6 +69,7 @@ func main() {
 	userService := services.NewUserService(userRepo, roleRepo)
 	backupService := services.NewBackupService(backupRepo, databaseService, userService, backupDir)
 	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
+	restoreService := services.NewRestoreService(restoreRepo, backupService, databaseService, userService)
 
 	// Initialize Mega service for cloud storage
 	megaConfig := config.GetMegaConfig()
@@ -106,6 +108,7 @@ func main() {
 	backupHandler := handlers.NewBackupHandler(backupService)
 	scheduleHandler := handlers.NewScheduleHandler(scheduleService)
 	userHandler := handlers.NewUserHandler(userService)
+	restoreHandler := handlers.NewRestoreHandler(restoreService)
 
 	// Initialize middleware
 	authMiddleware := middlewares.NewAuthMiddleware(cfg.JWT_SECRET)
@@ -130,6 +133,7 @@ func main() {
 	routes.SetupDatabaseRoutes(server, databaseHandler, authMiddleware)
 	routes.SetupBackupRoutes(server, backupHandler, authMiddleware)
 	routes.SetupScheduleRoutes(server, scheduleHandler, authMiddleware)
+	routes.SetupRestoreRoutes(server, restoreHandler, authMiddleware)
 	routes.UserRoutes(server, userHandler, authMiddleware)
 
 	// Initialize worker pool for background tasks
@@ -142,6 +146,7 @@ func main() {
 
 	// Pass worker pool to backup service
 	backupService.SetWorkerPool(workerPool)
+	restoreService.SetWorkerPool(workerPool)
 
 	// Start the cron scheduler and load active schedules
 	scheduleService.StartScheduler()

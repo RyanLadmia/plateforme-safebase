@@ -99,6 +99,13 @@
                       Télécharger
                     </button>
                     <button 
+                      v-if="backup.status === 'completed'"
+                      @click="restoreBackup(backup)"
+                      class="text-green-600 hover:text-green-800 transition-colors duration-200"
+                    >
+                      Restaurer
+                    </button>
+                    <button 
                       @click="deleteBackup(backup.id)"
                       class="text-red-600 hover:text-red-800 transition-colors duration-200"
                     >
@@ -199,6 +206,20 @@ const deleteBackup = async (id: number) => {
     safebaseStore.removeBackup(id)
   } catch (err: any) {
     alert(err.message)
+  }
+}
+
+const restoreBackup = async (backup: Backup) => {
+  // Confirmation simple avant restauration
+  if (!confirm(`Êtes-vous sûr de vouloir restaurer la sauvegarde "${backup.filename}" ?\n\n⚠️ Attention : Cette opération va remplacer les données actuelles de la base de données d'origine.`)) {
+    return
+  }
+  
+  try {
+    await backupService.restoreBackup(backup)
+    alert('Restauration lancée avec succès ! Le processus peut prendre quelques minutes.')
+  } catch (err: any) {
+    alert(`Erreur lors de la restauration : ${err.message}`)
   }
 }
 

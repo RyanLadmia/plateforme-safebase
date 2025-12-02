@@ -61,3 +61,27 @@ export async function downloadBackup(id: number, filename: string): Promise<void
   window.URL.revokeObjectURL(url)
   document.body.removeChild(link)
 }
+
+/**
+ * Lance une restauration d'une sauvegarde vers une base de données
+ */
+export async function restoreBackup(backupId: number, databaseId: number): Promise<any> {
+  const { data } = await apiClient.post(`/api/restores/backup/${backupId}/database/${databaseId}`)
+  return data.restore
+}
+
+/**
+ * Récupère toutes les restaurations de l'utilisateur
+ */
+export async function getRestores(): Promise<any[]> {
+  const { data } = await apiClient.get('/api/restores')
+  return data.restores || []
+}
+
+/**
+ * Récupère une restauration par son ID
+ */
+export async function getRestoreById(id: number): Promise<any> {
+  const { data } = await apiClient.get(`/api/restores/${id}`)
+  return data.restore
+}
