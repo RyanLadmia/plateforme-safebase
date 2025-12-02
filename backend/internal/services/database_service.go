@@ -60,10 +60,13 @@ func (s *DatabaseService) GetDatabasesByUser(userID uint) ([]models.Database, er
 
 // GetDatabaseByID returns a database by ID
 func (s *DatabaseService) GetDatabaseByID(id uint) (*models.Database, error) {
+	fmt.Printf("[DEBUG] GetDatabaseByID: Looking for database ID %d\n", id)
 	database, err := s.databaseRepo.GetByID(id)
 	if err != nil {
+		fmt.Printf("[DEBUG] GetDatabaseByID: Database ID %d not found - error: %v\n", id, err)
 		return nil, err
 	}
+	fmt.Printf("[DEBUG] GetDatabaseByID: Found database ID %d, name '%s', user_id %d\n", database.Id, database.Name, database.UserId)
 
 	// Decrypt the database password
 	if database.Password != "" {
@@ -78,11 +81,15 @@ func (s *DatabaseService) GetDatabaseByID(id uint) (*models.Database, error) {
 	if database.URL != "" {
 		decryptedURL, err := security.DecryptDatabasePassword(database.URL)
 		if err != nil {
-			return nil, fmt.Errorf("erreur lors du déchiffrement de l'URL: %v", err)
+			// Log the error but don't fail - URL decryption failure shouldn't prevent database access
+			fmt.Printf("[DEBUG] GetDatabaseByID: Failed to decrypt URL for database ID %d - error: %v\n", database.Id, err)
+			// Keep the encrypted URL as-is or set to empty to avoid issues
+			database.URL = ""
+		} else {
+			database.URL = decryptedURL
 		}
-		database.URL = decryptedURL
 	}
-
+	fmt.Print("ddddd", database, "ddddd")
 	return database, nil
 }
 
@@ -106,7 +113,7 @@ func (s *DatabaseService) UpdateDatabase(database *models.Database) error {
 	// Encrypt the database password before storing
 	if database.Password != "" {
 		// Check if password is already encrypted (contains base64 characters)
-		if !isEncryptedPassword(database.Password) {
+		if !isMyEncryptedPassword(database.Password) {
 			encryptedPassword, err := security.EncryptDatabasePassword(database.Password)
 			if err != nil {
 				return fmt.Errorf("erreur lors du chiffrement du mot de passe: %v", err)
@@ -118,7 +125,7 @@ func (s *DatabaseService) UpdateDatabase(database *models.Database) error {
 	// Encrypt the database URL before storing
 	if database.URL != "" {
 		// Check if URL is already encrypted
-		if !isEncryptedPassword(database.URL) {
+		if !isMyEncryptedPassword(database.URL) {
 			encryptedURL, err := security.EncryptDatabasePassword(database.URL)
 			if err != nil {
 				return fmt.Errorf("erreur lors du chiffrement de l'URL: %v", err)
@@ -130,10 +137,9 @@ func (s *DatabaseService) UpdateDatabase(database *models.Database) error {
 	return s.databaseRepo.Update(database)
 }
 
-// isEncryptedPassword checks if a password string appears to be encrypted (base64)
-func isEncryptedPassword(password string) bool {
-	// Simple check: encrypted passwords are base64 encoded and contain special chars
-	return len(password) > 20 && (password[len(password)-1] == '=' || strings.ContainsAny(password, "+/"))
+// UpdateDatabaseName updates only the name of a database (secure partial update)
+func (s *DatabaseService) UpdateDatabaseName(id uint, name string) error {
+	return s.databaseRepo.UpdateDatabaseName(id, strings.TrimSpace(name))
 }
 
 // DeleteDatabase deletes a database record
@@ -149,4 +155,20 @@ func (s *DatabaseService) DeleteDatabase(id uint, userID uint) error {
 	}
 
 	return s.databaseRepo.Delete(id)
+}
+
+// OLD FUNCTION TO CHECK IF PASSWORD IS ENCRYPTED
+// isEncryptedPassword checks if a password string appears to be encrypted (base64)
+//func isEncryptedPassword(password string) bool {
+// Simple check: encrypted passwords are base64 encoded and contain special chars
+//return len(password) > 20 && (password[len(password)-1] == '=' || strings.ContainsAny(password, "+/"))
+//}
+
+// NEW FUNCTION TO CHECK IF PASSWORD IS ENCRYPTED
+func isMyEncryptedPassword(password string) bool {
+	if password == "" {
+		return false
+	}
+	_, err := security.DecryptDatabasePassword(password)
+	return err == nil
 }

@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
 	"github.com/RyanLadmia/plateforme-safebase/internal/services"
@@ -196,8 +198,8 @@ func (h *DatabaseHandler) UpdateDatabase(c *gin.Context) {
 	})
 }
 
-// DeleteDatabase deletes a database configuration
-func (h *DatabaseHandler) DeleteDatabase(c *gin.Context) {
+// UpdateDatabasePartial updates only the name of a database (secure partial update)
+func (h *DatabaseHandler) UpdateDatabasePartial(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
@@ -212,12 +214,70 @@ func (h *DatabaseHandler) DeleteDatabase(c *gin.Context) {
 		return
 	}
 
-	if err := h.databaseService.DeleteDatabase(uint(id), userID.(uint)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la suppression: " + err.Error()})
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: Looking for database ID %d for user %d\n", id, userID.(uint))
+
+	// Get existing database
+	existingDatabase, err := h.databaseService.GetDatabaseByID(uint(id))
+	if err != nil {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: Database not found - error: %v\n", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Base de données introuvable"})
 		return
 	}
 
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: Found database %d, owner is %d, current user is %d\n", existingDatabase.Id, existingDatabase.UserId, userID.(uint))
+
+	// Verify user ownership
+	if existingDatabase.UserId != userID.(uint) {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: Access denied - database owner %d != user %d\n", existingDatabase.UserId, userID.(uint))
+		c.JSON(http.StatusForbidden, gin.H{"error": "Accès non autorisé"})
+		return
+	}
+
+	// Parse partial update request (only name for security)
+	var request struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides: " + err.Error()})
+		return
+	}
+
+	// Validate only the name (no URL validation for security)
+	if request.Name == "" || len(strings.TrimSpace(request.Name)) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Le nom de la base de données est requis"})
+		return
+	}
+
+	// Update only the name field
+	existingDatabase.Name = strings.TrimSpace(request.Name)
+
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: About to update database ID %d with name '%s'\n", existingDatabase.Id, existingDatabase.Name)
+
+	if err := h.databaseService.UpdateDatabaseName(existingDatabase.Id, existingDatabase.Name); err != nil {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: UpdateDatabaseName failed - error: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la mise à jour: " + err.Error()})
+		return
+	}
+
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: UpdateDatabaseName succeeded, now fetching updated database ID %d\n", existingDatabase.Id)
+
+	// Get the updated database to return it
+	updatedDatabase, err := h.databaseService.GetDatabaseByID(uint(existingDatabase.Id))
+	if err != nil {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: Failed to get updated database ID %d - error: %v\n", existingDatabase.Id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la récupération de la base mise à jour: " + err.Error()})
+		return
+	}
+
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: Successfully retrieved updated database ID %d, name '%s'\n", updatedDatabase.Id, updatedDatabase.Name)
+
+	// Return database without sensitive data for security
+	responseDb := *updatedDatabase
+	responseDb.Password = "" // Don't expose password in response
+	responseDb.URL = ""      // Don't expose encrypted URL in response
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Base de données supprimée avec succès",
+		"message":  "Base de données mise à jour avec succès",
+		"database": responseDb,
 	})
 }

@@ -88,6 +88,20 @@ export const useSafebaseStore = defineStore('safebase', () => {
     }
   }
 
+  const updateDatabasePartialAsync = async (id: number, updates: { name: string }): Promise<void> => {
+    loading.value = true
+    error.value = null
+    try {
+      const updatedDatabase = await databaseService.updateDatabasePartial(id, updates)
+      updateDatabase(updatedDatabase)
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Actions pour les sauvegardes
   const fetchBackups = async (): Promise<void> => {
     loading.value = true
@@ -316,6 +330,7 @@ export const useSafebaseStore = defineStore('safebase', () => {
     addDatabase,
     updateDatabase,
     updateDatabaseAsync,
+    updateDatabasePartialAsync,
     removeDatabase,
     
     // Actions - Backups

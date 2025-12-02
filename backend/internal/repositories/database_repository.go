@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"fmt"
+
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
 	"gorm.io/gorm"
 )
@@ -22,11 +24,14 @@ func (r *DatabaseRepository) Create(database *models.Database) error {
 
 // Get database by ID
 func (r *DatabaseRepository) GetByID(id uint) (*models.Database, error) {
+	fmt.Printf("[DEBUG] DatabaseRepository.GetByID: Querying database ID %d\n", id)
 	var database models.Database
 	err := r.db.Preload("User").First(&database, id).Error
 	if err != nil {
+		fmt.Printf("[DEBUG] DatabaseRepository.GetByID: Database ID %d not found in DB - error: %v\n", id, err)
 		return nil, err
 	}
+	fmt.Printf("[DEBUG] DatabaseRepository.GetByID: Found database ID %d, name '%s'\n", database.Id, database.Name)
 	return &database, nil
 }
 
@@ -40,6 +45,18 @@ func (r *DatabaseRepository) GetByUserID(userID uint) ([]models.Database, error)
 // Update database
 func (r *DatabaseRepository) Update(database *models.Database) error {
 	return r.db.Save(database).Error
+}
+
+// UpdateDatabaseName updates only the name field of a database
+func (r *DatabaseRepository) UpdateDatabaseName(id uint, name string) error {
+	fmt.Printf("[DEBUG] DatabaseRepository.UpdateDatabaseName: Updating database ID %d with name '%s'\n", id, name)
+	err := r.db.Model(&models.Database{}).Where("id = ?", id).Update("name", name).Error
+	if err != nil {
+		fmt.Printf("[DEBUG] DatabaseRepository.UpdateDatabaseName: Update failed - error: %v\n", err)
+		return err
+	}
+	fmt.Printf("[DEBUG] DatabaseRepository.UpdateDatabaseName: Update succeeded for database ID %d\n", id)
+	return nil
 }
 
 // Delete database
