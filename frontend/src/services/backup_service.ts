@@ -126,6 +126,17 @@ export class BackupService {
   getTotalSize(backups: Backup[]): number {
     return backups.reduce((total, backup) => total + backup.size, 0)
   }
+
+  /**
+   * Restaure une sauvegarde vers sa base de données d'origine
+   */
+  async restoreBackup(backup: Backup): Promise<any> {
+    if (backup.status !== 'completed') {
+      throw new Error('La sauvegarde n\'est pas encore terminée')
+    }
+
+    return await backupApi.restoreBackup(backup.id, backup.database_id)
+  }
 }
 
 // Export d'une instance unique du service
