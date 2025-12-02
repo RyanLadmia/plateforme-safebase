@@ -163,7 +163,7 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-     
+
 
     <!-- Edit Modal (Partial Update - Only Name) -->
     <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -255,12 +255,12 @@ const createDatabase = async () => {
 }
 
 const deleteDatabase = async (id: number) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette base de données ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette base de données ? Cette action est irréversible.')) return
   try {
-    // TODO: Implement delete functionality when backend supports it
-    alert('Fonctionnalité de suppression à implémenter')
+    await safebaseStore.deleteDatabaseAsync(id)
+    alert('Base de données supprimée avec succès !')
   } catch (err: any) {
-    alert(err.message)
+    alert('Erreur lors de la suppression: ' + err.message)
   }
 }
 
@@ -312,16 +312,6 @@ const updateDatabaseName = async () => {
     alert(err.message)
   } finally {
     formLoading.value = false
-  }
-}
-
-const deleteDatabse = async (id: number) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette base de données ?')) return
-  try {
-    await databaseService.deleteDatabase(id)
-    safebaseStore.removeDatabase(id)
-  } catch (err: any) {
-    alert(err.message)
   }
 }
 

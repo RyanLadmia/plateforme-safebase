@@ -281,3 +281,30 @@ func (h *DatabaseHandler) UpdateDatabasePartial(c *gin.Context) {
 		"database": responseDb,
 	})
 }
+
+// DeleteDatabase deletes a database configuration
+func (h *DatabaseHandler) DeleteDatabase(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalide"})
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilisateur non authentifié"})
+		return
+	}
+
+	// Delete the database (service handles ownership verification)
+	if err := h.databaseService.DeleteDatabase(uint(id), userID.(uint)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la suppression: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Base de données supprimée avec succès",
+	})
+}
