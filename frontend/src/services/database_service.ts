@@ -120,6 +120,13 @@ export class DatabaseService {
   async deleteDatabase(id: number): Promise<void> {
     await databaseApi.deleteDatabase(id)
   }
+
+  /**
+   * Récupère une base de données avec le nombre de sauvegardes associées
+   */
+  async getDatabaseWithBackupCount(id: number): Promise<{ database: Database; backup_count: number }> {
+    return await databaseApi.getDatabaseWithBackupCount(id)
+  }
 }
 
 // Export d'une instance unique du service

@@ -255,10 +255,31 @@ const createDatabase = async () => {
 }
 
 const deleteDatabase = async (id: number) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette base de données ? Cette action est irréversible.')) return
   try {
+    // Récupérer les détails de la base de données avec le nombre de sauvegardes
+    const details = await safebaseStore.getDatabaseWithBackupCountAsync(id)
+    
+    const backupCount = details.backup_count
+    const dbName = details.database.name
+    
+    let message = `Êtes-vous sûr de vouloir supprimer la base de données "${dbName}" ?`
+    
+    if (backupCount > 0) {
+      message += `\n\n⚠️ Cette action supprimera également ${backupCount} sauvegarde(s) associée(s) et tous les fichiers stockés dans le cloud.`
+    }
+    
+    message += `\n\nCette action est irréversible.`
+    
+    if (!confirm(message)) return
+    
     await safebaseStore.deleteDatabaseAsync(id)
-    alert('Base de données supprimée avec succès !')
+    
+    let successMessage = 'Base de données supprimée avec succès !'
+    if (backupCount > 0) {
+      successMessage += ` (${backupCount} sauvegarde(s) supprimée(s) également)`
+    }
+    
+    alert(successMessage)
   } catch (err: any) {
     alert('Erreur lors de la suppression: ' + err.message)
   }

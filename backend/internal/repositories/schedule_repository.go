@@ -77,3 +77,8 @@ func (r *ScheduleRepository) Update(schedule *models.Schedule) error {
 func (r *ScheduleRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Schedule{}, id).Error
 }
+
+// Soft delete all schedules for a database
+func (r *ScheduleRepository) SoftDeleteByDatabaseID(databaseID uint) error {
+	return r.db.Where("database_id = ?", databaseID).Delete(&models.Schedule{}).Error
+}

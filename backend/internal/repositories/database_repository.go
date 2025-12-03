@@ -63,3 +63,8 @@ func (r *DatabaseRepository) UpdateDatabaseName(id uint, name string) error {
 func (r *DatabaseRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Database{}, id).Error
 }
+
+// Soft delete database
+func (r *DatabaseRepository) SoftDelete(id uint) error {
+	return r.db.Delete(&models.Database{}, id).Error // GORM automatically does soft delete with DeletedAt field
+}

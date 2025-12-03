@@ -65,9 +65,11 @@ func main() {
 
 	// Initialize backup service with backup directory
 	backupDir := filepath.Join(".", "db", "backups")
-	databaseService := services.NewDatabaseService(databaseRepo)
+	databaseService := services.NewDatabaseService(databaseRepo, backupRepo, restoreRepo, scheduleRepo, nil) // backupService will be set later
 	userService := services.NewUserService(userRepo, roleRepo)
 	backupService := services.NewBackupService(backupRepo, databaseService, userService, backupDir)
+	// Set backupService reference in databaseService to enable cascade deletion
+	databaseService.SetBackupService(backupService)
 	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
 	restoreService := services.NewRestoreService(restoreRepo, backupService, databaseService, userService)
 

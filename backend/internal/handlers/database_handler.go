@@ -282,6 +282,52 @@ func (h *DatabaseHandler) UpdateDatabasePartial(c *gin.Context) {
 	})
 }
 
+// GetDatabaseWithBackupCount returns a database by ID with backup count
+func (h *DatabaseHandler) GetDatabaseWithBackupCount(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalide"})
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilisateur non authentifié"})
+		return
+	}
+
+	database, err := h.databaseService.GetDatabaseByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Base de données introuvable"})
+		return
+	}
+
+	// Verify user ownership
+	if database.UserId != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Accès non autorisé"})
+		return
+	}
+
+	// Get backup count for this database
+	backups, err := h.databaseService.GetBackupsByDatabase(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la récupération des sauvegardes: " + err.Error()})
+		return
+	}
+
+	// Return database without sensitive data for security
+	responseDb := *database
+	responseDb.Password = "" // Don't expose password in response
+	responseDb.URL = ""      // Don't expose encrypted URL in response
+
+	c.JSON(http.StatusOK, gin.H{
+		"database":     responseDb,
+		"backup_count": len(backups),
+	})
+}
+
 // DeleteDatabase deletes a database configuration
 func (h *DatabaseHandler) DeleteDatabase(c *gin.Context) {
 	idParam := c.Param("id")

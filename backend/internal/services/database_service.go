@@ -10,14 +10,27 @@ import (
 )
 
 type DatabaseService struct {
-	databaseRepo *repositories.DatabaseRepository
+	databaseRepo  *repositories.DatabaseRepository
+	backupRepo    *repositories.BackupRepository
+	restoreRepo   *repositories.RestoreRepository
+	scheduleRepo  *repositories.ScheduleRepository
+	backupService *BackupService
 }
 
 // Constructor for DatabaseService
-func NewDatabaseService(databaseRepo *repositories.DatabaseRepository) *DatabaseService {
+func NewDatabaseService(databaseRepo *repositories.DatabaseRepository, backupRepo *repositories.BackupRepository, restoreRepo *repositories.RestoreRepository, scheduleRepo *repositories.ScheduleRepository, backupService *BackupService) *DatabaseService {
 	return &DatabaseService{
-		databaseRepo: databaseRepo,
+		databaseRepo:  databaseRepo,
+		backupRepo:    backupRepo,
+		restoreRepo:   restoreRepo,
+		scheduleRepo:  scheduleRepo,
+		backupService: backupService,
 	}
+}
+
+// SetBackupService sets the backup service reference for cascade deletion
+func (s *DatabaseService) SetBackupService(backupService *BackupService) {
+	s.backupService = backupService
 }
 
 // CreateDatabase creates a new database record
@@ -142,7 +155,12 @@ func (s *DatabaseService) UpdateDatabaseName(id uint, name string) error {
 	return s.databaseRepo.UpdateDatabaseName(id, strings.TrimSpace(name))
 }
 
-// DeleteDatabase deletes a database record
+// GetBackupsByDatabase returns all backups for a database
+func (s *DatabaseService) GetBackupsByDatabase(databaseID uint) ([]models.Backup, error) {
+	return s.backupRepo.GetByDatabaseID(databaseID)
+}
+
+// DeleteDatabase soft deletes a database record and all associated records (backups, schedules, restores)
 func (s *DatabaseService) DeleteDatabase(id uint, userID uint) error {
 	database, err := s.databaseRepo.GetByID(id)
 	if err != nil {
@@ -154,7 +172,35 @@ func (s *DatabaseService) DeleteDatabase(id uint, userID uint) error {
 		return fmt.Errorf("accès non autorisé à cette base de données")
 	}
 
-	return s.databaseRepo.Delete(id)
+	fmt.Printf("[DELETE] Soft deleting database %d and all associated records\n", id)
+
+	// Soft delete all associated backups (keep files in Mega for storage optimization)
+	if err := s.backupRepo.SoftDeleteByDatabaseID(id); err != nil {
+		fmt.Printf("[DELETE] Warning: failed to soft delete backups for database %d: %v\n", id, err)
+		// Continue even if soft delete fails
+	} else {
+		fmt.Printf("[DELETE] Soft deleted backups for database %d\n", id)
+	}
+
+	// Soft delete all associated schedules
+	if err := s.scheduleRepo.SoftDeleteByDatabaseID(id); err != nil {
+		fmt.Printf("[DELETE] Warning: failed to soft delete schedules for database %d: %v\n", id, err)
+		// Continue even if soft delete fails
+	} else {
+		fmt.Printf("[DELETE] Soft deleted schedules for database %d\n", id)
+	}
+
+	// Soft delete all associated restores
+	if err := s.restoreRepo.SoftDeleteByDatabaseID(id); err != nil {
+		fmt.Printf("[DELETE] Warning: failed to soft delete restores for database %d: %v\n", id, err)
+		// Continue even if soft delete fails
+	} else {
+		fmt.Printf("[DELETE] Soft deleted restores for database %d\n", id)
+	}
+
+	// Finally, soft delete the database record
+	fmt.Printf("[DELETE] Soft deleting database record ID %d\n", id)
+	return s.databaseRepo.SoftDelete(id)
 }
 
 // OLD FUNCTION TO CHECK IF PASSWORD IS ENCRYPTED

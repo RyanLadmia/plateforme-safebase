@@ -116,6 +116,19 @@ export const useSafebaseStore = defineStore('safebase', () => {
     }
   }
 
+  const getDatabaseWithBackupCountAsync = async (id: number): Promise<{ database: Database; backup_count: number }> => {
+    loading.value = true
+    error.value = null
+    try {
+      return await databaseService.getDatabaseWithBackupCount(id)
+    } catch (err: any) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Actions pour les sauvegardes
   const fetchBackups = async (): Promise<void> => {
     loading.value = true
@@ -345,6 +358,7 @@ export const useSafebaseStore = defineStore('safebase', () => {
     updateDatabase,
     updateDatabaseAsync,
     updateDatabasePartialAsync,
+    getDatabaseWithBackupCountAsync,
     deleteDatabaseAsync,
     removeDatabase,
     
