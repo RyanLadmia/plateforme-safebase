@@ -39,8 +39,57 @@ func (s *ScheduleService) StartScheduler() {
 	s.cronScheduler.Start()
 }
 
-// CreateSchedule creates a new schedule in DB and adds it to the cron scheduler
-func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpression string) (*models.Schedule, error) {
+// GetSchedules returns all schedules for a user
+func (s *ScheduleService) GetSchedules(userID uint) ([]models.Schedule, error) {
+	return s.scheduleRepo.GetByUserID(userID)
+}
+
+// GetSchedule returns a specific schedule by ID
+func (s *ScheduleService) GetSchedule(id uint, userID uint) (*models.Schedule, error) {
+	schedule, err := s.scheduleRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if schedule.UserId != userID {
+		return nil, fmt.Errorf("accès non autorisé")
+	}
+	return schedule, nil
+}
+
+// LoadActiveSchedules loads all active schedules from DB and adds them to the cron scheduler
+func (s *ScheduleService) LoadActiveSchedules() error {
+	schedules, err := s.scheduleRepo.GetActive()
+	if err != nil {
+		return err
+	}
+
+	for _, schedule := range schedules {
+		db, err := s.databaseRepo.GetByID(schedule.DatabaseId)
+		if err != nil {
+			fmt.Printf("Warning: database %d not found for schedule %d\n", schedule.DatabaseId, schedule.Id)
+			continue
+		}
+		jobID, err := s.cronScheduler.AddFunc(schedule.CronExpression, func() {
+			_, err := s.backupService.CreateBackup(db.Id, db.UserId, "127.0.0.1", "Scheduled Task")
+			if err != nil {
+				fmt.Printf("erreur lors de la création de la sauvegarde planifiée pour la base de données %s: %v\n", db.Name, err)
+			} else {
+				fmt.Printf("sauvegarde planifiée créée avec succès pour la base de données %s\n", db.Name)
+			}
+		})
+		if err != nil {
+			fmt.Printf("Warning: failed to schedule job for schedule %d: %v\n", schedule.Id, err)
+			continue
+		}
+		s.jobs[schedule.Id] = jobID
+	}
+	return nil
+}
+
+// Logging methods for action history
+
+// CreateSchedule creates a new schedule and logs the action
+func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpression string, ipAddress string, userAgent string) (*models.Schedule, error) {
 	// Verify that the database exists and belongs to the user
 	db, err := s.databaseRepo.GetByID(databaseID)
 	if err != nil {
@@ -74,7 +123,7 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpre
 
 	// Add to cron scheduler
 	jobID, err := s.cronScheduler.AddFunc(cronExpression, func() {
-		_, err := s.backupService.CreateBackup(db.Id, db.UserId)
+		_, err := s.backupService.CreateBackup(db.Id, db.UserId, "127.0.0.1", "Scheduled Task")
 		if err != nil {
 			fmt.Printf("erreur lors de la création de la sauvegarde planifiée pour la base de données %s: %v\n", db.Name, err)
 		} else {
@@ -87,28 +136,23 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpre
 		return nil, fmt.Errorf("erreur lors de l'ajout de la tâche cron: %v", err)
 	}
 	s.jobs[schedule.Id] = jobID
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"schedule_id":     schedule.Id,
+			"database_id":     schedule.DatabaseId,
+			"cron_expression": schedule.CronExpression,
+			"active":          schedule.Active,
+		}
+		s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, "Planification créée", metadata, ipAddress, userAgent)
+	}
+
 	return schedule, nil
 }
 
-// GetSchedules returns all schedules for a user
-func (s *ScheduleService) GetSchedules(userID uint) ([]models.Schedule, error) {
-	return s.scheduleRepo.GetByUserID(userID)
-}
-
-// GetSchedule returns a specific schedule by ID
-func (s *ScheduleService) GetSchedule(id uint, userID uint) (*models.Schedule, error) {
-	schedule, err := s.scheduleRepo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-	if schedule.UserId != userID {
-		return nil, fmt.Errorf("accès non autorisé")
-	}
-	return schedule, nil
-}
-
-// UpdateSchedule updates a schedule and reschedules the cron job
-func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression string, active bool) (*models.Schedule, error) {
+// UpdateSchedule updates a schedule and logs the action
+func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression string, active bool, ipAddress string, userAgent string) (*models.Schedule, error) {
 	schedule, err := s.scheduleRepo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -139,7 +183,7 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 			return nil, fmt.Errorf("base de données introuvable: %v", err)
 		}
 		jobID, err := s.cronScheduler.AddFunc(schedule.CronExpression, func() {
-			_, err := s.backupService.CreateBackup(db.Id, db.UserId)
+			_, err := s.backupService.CreateBackup(db.Id, db.UserId, "127.0.0.1", "Scheduled Task")
 			if err != nil {
 				fmt.Printf("erreur lors de la création de la sauvegarde planifiée pour la base de données %s: %v\n", db.Name, err)
 			} else {
@@ -154,87 +198,6 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 
 	if err := s.scheduleRepo.Update(schedule); err != nil {
 		return nil, fmt.Errorf("erreur lors de la mise à jour: %v", err)
-	}
-	return schedule, nil
-}
-
-// DeleteSchedule deletes a schedule and removes it from cron
-func (s *ScheduleService) DeleteSchedule(id uint, userID uint) error {
-	schedule, err := s.scheduleRepo.GetByID(id)
-	if err != nil {
-		return err
-	}
-	if schedule.UserId != userID {
-		return fmt.Errorf("accès non autorisé")
-	}
-
-	// Remove from cron if exists
-	if entryID, exists := s.jobs[schedule.Id]; exists {
-		s.cronScheduler.Remove(entryID)
-		delete(s.jobs, schedule.Id)
-	}
-
-	return s.scheduleRepo.Delete(id)
-}
-
-// LoadActiveSchedules loads all active schedules from DB and adds them to the cron scheduler
-func (s *ScheduleService) LoadActiveSchedules() error {
-	schedules, err := s.scheduleRepo.GetActive()
-	if err != nil {
-		return err
-	}
-
-	for _, schedule := range schedules {
-		db, err := s.databaseRepo.GetByID(schedule.DatabaseId)
-		if err != nil {
-			fmt.Printf("Warning: database %d not found for schedule %d\n", schedule.DatabaseId, schedule.Id)
-			continue
-		}
-		jobID, err := s.cronScheduler.AddFunc(schedule.CronExpression, func() {
-			_, err := s.backupService.CreateBackup(db.Id, db.UserId)
-			if err != nil {
-				fmt.Printf("erreur lors de la création de la sauvegarde planifiée pour la base de données %s: %v\n", db.Name, err)
-			} else {
-				fmt.Printf("sauvegarde planifiée créée avec succès pour la base de données %s\n", db.Name)
-			}
-		})
-		if err != nil {
-			fmt.Printf("Warning: failed to schedule job for schedule %d: %v\n", schedule.Id, err)
-			continue
-		}
-		s.jobs[schedule.Id] = jobID
-	}
-	return nil
-}
-
-// Logging methods for action history
-
-// CreateScheduleWithLogging creates a new schedule and logs the action
-func (s *ScheduleService) CreateScheduleWithLogging(databaseID uint, userID uint, cronExpression string, ipAddress string, userAgent string) (*models.Schedule, error) {
-	schedule, err := s.CreateSchedule(databaseID, userID, cronExpression)
-	if err != nil {
-		return nil, err
-	}
-
-	// Log the action
-	if s.actionHistoryService != nil {
-		metadata := map[string]interface{}{
-			"schedule_id":     schedule.Id,
-			"database_id":     schedule.DatabaseId,
-			"cron_expression": schedule.CronExpression,
-			"active":          schedule.Active,
-		}
-		s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, "Planification créée", metadata, ipAddress, userAgent)
-	}
-
-	return schedule, nil
-}
-
-// UpdateScheduleWithLogging updates a schedule and logs the action
-func (s *ScheduleService) UpdateScheduleWithLogging(id uint, userID uint, cronExpression string, active bool, ipAddress string, userAgent string) (*models.Schedule, error) {
-	schedule, err := s.UpdateSchedule(id, userID, cronExpression, active)
-	if err != nil {
-		return nil, err
 	}
 
 	// Log the action
@@ -251,8 +214,8 @@ func (s *ScheduleService) UpdateScheduleWithLogging(id uint, userID uint, cronEx
 	return schedule, nil
 }
 
-// DeleteScheduleWithLogging deletes a schedule and logs the action
-func (s *ScheduleService) DeleteScheduleWithLogging(id uint, userID uint, ipAddress string, userAgent string) error {
+// DeleteSchedule deletes a schedule and logs the action
+func (s *ScheduleService) DeleteSchedule(id uint, userID uint, ipAddress string, userAgent string) error {
 	schedule, err := s.scheduleRepo.GetByID(id)
 	if err != nil {
 		return err
@@ -263,7 +226,13 @@ func (s *ScheduleService) DeleteScheduleWithLogging(id uint, userID uint, ipAddr
 		return fmt.Errorf("accès non autorisé")
 	}
 
-	err = s.DeleteSchedule(id, userID)
+	// Remove from cron if exists
+	if entryID, exists := s.jobs[schedule.Id]; exists {
+		s.cronScheduler.Remove(entryID)
+		delete(s.jobs, schedule.Id)
+	}
+
+	err = s.scheduleRepo.Delete(id)
 	if err != nil {
 		return err
 	}

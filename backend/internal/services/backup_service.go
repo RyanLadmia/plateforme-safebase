@@ -202,44 +202,6 @@ func (s *BackupService) findExecutable(paths []string) (string, error) {
 	return "", fmt.Errorf("aucun exécutable trouvé dans les chemins testés")
 }
 
-// CreateBackup creates a backup for the specified database asynchronously
-func (s *BackupService) CreateBackup(databaseID uint, userID uint) (*models.Backup, error) {
-	// Get database info with decrypted password
-	database, err := s.databaseService.GetDatabaseByID(databaseID)
-	if err != nil {
-		return nil, fmt.Errorf("database not found: %v", err)
-	}
-
-	// Verify that the database belongs to the user
-	if database.UserId != userID {
-		return nil, fmt.Errorf("unauthorized: database does not belong to user")
-	}
-
-	// Create backup record with pending status
-	backup := &models.Backup{
-		UserId:     userID,
-		DatabaseId: databaseID,
-		Status:     "pending",
-		Filename:   s.generateBackupFilename(database),
-		Filepath:   "", // Will be set when backup is completed
-	}
-
-	if err := s.backupRepo.Create(backup); err != nil {
-		return nil, fmt.Errorf("failed to create backup record: %v", err)
-	}
-
-	// Execute backup asynchronously using worker pool
-	if s.workerPool != nil {
-		s.workerPool.Submit(func() {
-			s.executeBackupAsync(backup, database)
-		})
-	} else {
-		go s.executeBackupAsync(backup, database)
-	}
-
-	return backup, nil
-}
-
 // executeBackupAsync executes the backup process asynchronously
 func (s *BackupService) executeBackupAsync(backup *models.Backup, database *models.Database) {
 	defer func() {
@@ -752,11 +714,39 @@ func (s *BackupService) DeleteBackup(id uint, userID uint) error {
 
 // Logging methods for action history
 
-// CreateBackupWithLogging creates a backup and logs the action
-func (s *BackupService) CreateBackupWithLogging(databaseID uint, userID uint, ipAddress string, userAgent string) (*models.Backup, error) {
-	backup, err := s.CreateBackup(databaseID, userID)
+// CreateBackup creates a backup and logs the action
+func (s *BackupService) CreateBackup(databaseID uint, userID uint, ipAddress string, userAgent string) (*models.Backup, error) {
+	// Get database info with decrypted password
+	database, err := s.databaseService.GetDatabaseByID(databaseID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("database not found: %v", err)
+	}
+
+	// Verify that the database belongs to the user
+	if database.UserId != userID {
+		return nil, fmt.Errorf("unauthorized: database does not belong to user")
+	}
+
+	// Create backup record with pending status
+	backup := &models.Backup{
+		UserId:     userID,
+		DatabaseId: databaseID,
+		Status:     "pending",
+		Filename:   s.generateBackupFilename(database),
+		Filepath:   "", // Will be set when backup is completed
+	}
+
+	if err := s.backupRepo.Create(backup); err != nil {
+		return nil, fmt.Errorf("failed to create backup record: %v", err)
+	}
+
+	// Execute backup asynchronously using worker pool
+	if s.workerPool != nil {
+		s.workerPool.Submit(func() {
+			s.executeBackupAsync(backup, database)
+		})
+	} else {
+		go s.executeBackupAsync(backup, database)
 	}
 
 	// Log the action

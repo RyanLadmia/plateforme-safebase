@@ -46,7 +46,7 @@ func (h *RestoreHandler) CreateRestore(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	restore, err := h.restoreService.CreateRestoreWithLogging(uint(backupID), uint(databaseID), userID.(uint), ipAddress, userAgent)
+	restore, err := h.restoreService.CreateRestore(uint(backupID), uint(databaseID), userID.(uint), ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création de la restauration: " + err.Error()})
 		return

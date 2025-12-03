@@ -39,7 +39,7 @@ func (h *BackupHandler) CreateBackup(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	backup, err := h.backupService.CreateBackupWithLogging(uint(databaseID), userID.(uint), ipAddress, userAgent)
+	backup, err := h.backupService.CreateBackup(uint(databaseID), userID.(uint), ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création de la sauvegarde: " + err.Error()})
 		return

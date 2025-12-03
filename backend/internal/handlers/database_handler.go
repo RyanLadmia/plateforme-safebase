@@ -43,6 +43,10 @@ func (h *DatabaseHandler) CreateDatabase(c *gin.Context) {
 		return
 	}
 
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
 	// Convert request to Database model
 	database := &models.Database{
 		Name:     request.Name,
@@ -56,7 +60,7 @@ func (h *DatabaseHandler) CreateDatabase(c *gin.Context) {
 		UserId:   userID.(uint),
 	}
 
-	if err := h.databaseService.CreateDatabase(database); err != nil {
+	if err := h.databaseService.CreateDatabase(database, userID.(uint), ipAddress, userAgent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création de la base de données: " + err.Error()})
 		return
 	}
@@ -146,6 +150,10 @@ func (h *DatabaseHandler) UpdateDatabase(c *gin.Context) {
 		return
 	}
 
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
 	// Get existing database
 	existingDatabase, err := h.databaseService.GetDatabaseByID(uint(id))
 	if err != nil {
@@ -183,7 +191,7 @@ func (h *DatabaseHandler) UpdateDatabase(c *gin.Context) {
 		existingDatabase.Password = request.Password
 	}
 
-	if err := h.databaseService.UpdateDatabase(existingDatabase); err != nil {
+	if err := h.databaseService.UpdateDatabase(existingDatabase, userID.(uint), ipAddress, userAgent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la mise à jour: " + err.Error()})
 		return
 	}
@@ -213,6 +221,10 @@ func (h *DatabaseHandler) UpdateDatabasePartial(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilisateur non authentifié"})
 		return
 	}
+
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
 
 	fmt.Printf("[DEBUG] UpdateDatabasePartial: Looking for database ID %d for user %d\n", id, userID.(uint))
 
@@ -248,18 +260,18 @@ func (h *DatabaseHandler) UpdateDatabasePartial(c *gin.Context) {
 		return
 	}
 
-	// Update only the name field
-	existingDatabase.Name = strings.TrimSpace(request.Name)
+	// Store old name for logging
+	newName := strings.TrimSpace(request.Name)
 
-	fmt.Printf("[DEBUG] UpdateDatabasePartial: About to update database ID %d with name '%s'\n", existingDatabase.Id, existingDatabase.Name)
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: About to update database ID %d with name '%s'\n", existingDatabase.Id, newName)
 
-	if err := h.databaseService.UpdateDatabaseName(existingDatabase.Id, existingDatabase.Name); err != nil {
-		fmt.Printf("[DEBUG] UpdateDatabasePartial: UpdateDatabaseName failed - error: %v\n", err)
+	if err := h.databaseService.UpdateDatabaseName(existingDatabase.Id, newName, userID.(uint), ipAddress, userAgent); err != nil {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: UpdateDatabaseNameWithLogging failed - error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la mise à jour: " + err.Error()})
 		return
 	}
 
-	fmt.Printf("[DEBUG] UpdateDatabasePartial: UpdateDatabaseName succeeded, now fetching updated database ID %d\n", existingDatabase.Id)
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: UpdateDatabaseNameWithLogging succeeded, now fetching updated database ID %d\n", existingDatabase.Id)
 
 	// Get the updated database to return it
 	updatedDatabase, err := h.databaseService.GetDatabaseByID(uint(existingDatabase.Id))
@@ -344,8 +356,12 @@ func (h *DatabaseHandler) DeleteDatabase(c *gin.Context) {
 		return
 	}
 
-	// Delete the database (service handles ownership verification)
-	if err := h.databaseService.DeleteDatabase(uint(id), userID.(uint)); err != nil {
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
+	// Delete the database with logging (service handles ownership verification)
+	if err := h.databaseService.DeleteDatabase(uint(id), userID.(uint), ipAddress, userAgent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la suppression: " + err.Error()})
 		return
 	}

@@ -41,7 +41,7 @@ func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	schedule, err := h.scheduleService.CreateScheduleWithLogging(request.DatabaseID, userID.(uint), request.CronExpression, ipAddress, userAgent)
+	schedule, err := h.scheduleService.CreateSchedule(request.DatabaseID, userID.(uint), request.CronExpression, ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création du schedule: " + err.Error()})
 		return
@@ -136,7 +136,7 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 		active = *request.Active
 	}
 
-	schedule, err := h.scheduleService.UpdateScheduleWithLogging(uint(id), userID.(uint), cronExpr, active, ipAddress, userAgent)
+	schedule, err := h.scheduleService.UpdateSchedule(uint(id), userID.(uint), cronExpr, active, ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la mise à jour du schedule: " + err.Error()})
 		return
@@ -167,7 +167,7 @@ func (h *ScheduleHandler) DeleteSchedule(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	if err := h.scheduleService.DeleteScheduleWithLogging(uint(id), userID.(uint), ipAddress, userAgent); err != nil {
+	if err := h.scheduleService.DeleteSchedule(uint(id), userID.(uint), ipAddress, userAgent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la suppression du schedule: " + err.Error()})
 		return
 	}

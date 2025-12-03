@@ -76,59 +76,6 @@ func (s *RestoreService) unzipBackupData(zipData []byte) ([]byte, error) {
 	return nil, fmt.Errorf("fichier SQL non trouvé dans l'archive ZIP")
 }
 
-// CreateRestore creates a restore operation for the specified backup and database asynchronously
-func (s *RestoreService) CreateRestore(backupID uint, databaseID uint, userID uint) (*models.Restore, error) {
-	// Get backup info
-	backup, err := s.backupService.GetBackupByID(backupID)
-	if err != nil {
-		return nil, fmt.Errorf("sauvegarde introuvable: %v", err)
-	}
-
-	// Verify that the backup belongs to the user
-	if backup.UserId != userID {
-		return nil, fmt.Errorf("accès non autorisé à cette sauvegarde")
-	}
-
-	// Get database info
-	database, err := s.databaseService.GetDatabaseByID(databaseID)
-	if err != nil {
-		return nil, fmt.Errorf("base de données introuvable: %v", err)
-	}
-
-	// Verify that the database belongs to the user
-	if database.UserId != userID {
-		return nil, fmt.Errorf("accès non autorisé à cette base de données")
-	}
-
-	// Verify that backup is completed
-	if backup.Status != "completed" {
-		return nil, fmt.Errorf("la sauvegarde n'est pas encore terminée")
-	}
-
-	// Create restore record with pending status
-	restore := &models.Restore{
-		UserId:     userID,
-		BackupId:   backupID,
-		DatabaseId: databaseID,
-		Status:     "pending",
-	}
-
-	if err := s.restoreRepo.Create(restore); err != nil {
-		return nil, fmt.Errorf("échec de la création de l'enregistrement de restauration: %v", err)
-	}
-
-	// Execute restore asynchronously using worker pool
-	if s.workerPool != nil {
-		s.workerPool.Submit(func() {
-			s.executeRestoreAsync(restore, backup, database)
-		})
-	} else {
-		go s.executeRestoreAsync(restore, backup, database)
-	}
-
-	return restore, nil
-}
-
 // executeRestoreAsync executes the restore process asynchronously
 func (s *RestoreService) executeRestoreAsync(restore *models.Restore, backup *models.Backup, database *models.Database) {
 	defer func() {
@@ -327,11 +274,54 @@ func (s *RestoreService) GetRestoreByID(id uint) (*models.Restore, error) {
 
 // Logging methods for action history
 
-// CreateRestoreWithLogging creates a restore operation and logs the action
-func (s *RestoreService) CreateRestoreWithLogging(backupID uint, databaseID uint, userID uint, ipAddress string, userAgent string) (*models.Restore, error) {
-	restore, err := s.CreateRestore(backupID, databaseID, userID)
+// CreateRestore creates a restore operation and logs the action
+func (s *RestoreService) CreateRestore(backupID uint, databaseID uint, userID uint, ipAddress string, userAgent string) (*models.Restore, error) {
+	// Get backup info
+	backup, err := s.backupService.GetBackupByID(backupID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sauvegarde introuvable: %v", err)
+	}
+
+	// Verify that the backup belongs to the user
+	if backup.UserId != userID {
+		return nil, fmt.Errorf("accès non autorisé à cette sauvegarde")
+	}
+
+	// Get database info
+	database, err := s.databaseService.GetDatabaseByID(databaseID)
+	if err != nil {
+		return nil, fmt.Errorf("base de données introuvable: %v", err)
+	}
+
+	// Verify that the database belongs to the user
+	if database.UserId != userID {
+		return nil, fmt.Errorf("accès non autorisé à cette base de données")
+	}
+
+	// Verify that backup is completed
+	if backup.Status != "completed" {
+		return nil, fmt.Errorf("la sauvegarde n'est pas encore terminée")
+	}
+
+	// Create restore record with pending status
+	restore := &models.Restore{
+		UserId:     userID,
+		BackupId:   backupID,
+		DatabaseId: databaseID,
+		Status:     "pending",
+	}
+
+	if err := s.restoreRepo.Create(restore); err != nil {
+		return nil, fmt.Errorf("échec de la création de l'enregistrement de restauration: %v", err)
+	}
+
+	// Execute restore asynchronously using worker pool
+	if s.workerPool != nil {
+		s.workerPool.Submit(func() {
+			s.executeRestoreAsync(restore, backup, database)
+		})
+	} else {
+		go s.executeRestoreAsync(restore, backup, database)
 	}
 
 	// Log the action

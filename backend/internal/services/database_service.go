@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
 	"github.com/RyanLadmia/plateforme-safebase/internal/repositories"
@@ -39,8 +38,8 @@ func (s *DatabaseService) SetActionHistoryService(actionHistoryService *ActionHi
 	s.actionHistoryService = actionHistoryService
 }
 
-// CreateDatabase creates a new database record
-func (s *DatabaseService) CreateDatabase(database *models.Database) error {
+// CreateDatabase creates a new database record with action logging
+func (s *DatabaseService) CreateDatabase(database *models.Database, userID uint, ipAddress, userAgent string) error {
 	// Validate database type
 	if database.Type != "mysql" && database.Type != "postgres" && database.Type != "postgresql" {
 		return fmt.Errorf("type de base de données non supporté: %s", database.Type)
@@ -69,7 +68,14 @@ func (s *DatabaseService) CreateDatabase(database *models.Database) error {
 		database.URL = encryptedURL
 	}
 
-	return s.databaseRepo.Create(database)
+	err := s.databaseRepo.Create(database)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	s.logDatabaseAction(userID, "created", database.Id, database.Name, ipAddress, userAgent)
+	return nil
 }
 
 // LogDatabaseAction logs a database action if action history service is available
@@ -132,8 +138,8 @@ func (s *DatabaseService) GetDatabaseByIDForBackup(id uint) (*models.Database, e
 	return s.GetDatabaseByID(id) // Already decrypts password
 }
 
-// UpdateDatabase updates a database record
-func (s *DatabaseService) UpdateDatabase(database *models.Database) error {
+// UpdateDatabase updates a database record with action logging
+func (s *DatabaseService) UpdateDatabase(database *models.Database, userID uint, ipAddress, userAgent string) error {
 	// Validate database type
 	if database.Type != "mysql" && database.Type != "postgres" && database.Type != "postgresql" {
 		return fmt.Errorf("type de base de données non supporté: %s", database.Type)
@@ -168,29 +174,7 @@ func (s *DatabaseService) UpdateDatabase(database *models.Database) error {
 		}
 	}
 
-	return s.databaseRepo.Update(database)
-}
-
-// UpdateDatabaseName updates only the name of a database (secure partial update)
-func (s *DatabaseService) UpdateDatabaseName(id uint, name string) error {
-	return s.databaseRepo.UpdateDatabaseName(id, strings.TrimSpace(name))
-}
-
-// CreateDatabaseWithLogging creates a new database record with action logging
-func (s *DatabaseService) CreateDatabaseWithLogging(database *models.Database, userID uint, ipAddress, userAgent string) error {
-	err := s.CreateDatabase(database)
-	if err != nil {
-		return err
-	}
-
-	// Log the action
-	s.logDatabaseAction(userID, "created", database.Id, database.Name, ipAddress, userAgent)
-	return nil
-}
-
-// UpdateDatabaseWithLogging updates a database record with action logging
-func (s *DatabaseService) UpdateDatabaseWithLogging(database *models.Database, userID uint, ipAddress, userAgent string) error {
-	err := s.UpdateDatabase(database)
+	err := s.databaseRepo.Update(database)
 	if err != nil {
 		return err
 	}
@@ -200,9 +184,9 @@ func (s *DatabaseService) UpdateDatabaseWithLogging(database *models.Database, u
 	return nil
 }
 
-// UpdateDatabaseNameWithLogging updates only the name of a database with action logging
-func (s *DatabaseService) UpdateDatabaseNameWithLogging(id uint, name string, userID uint, ipAddress, userAgent string) error {
-	err := s.UpdateDatabaseName(id, name)
+// UpdateDatabaseName updates only the name of a database with action logging
+func (s *DatabaseService) UpdateDatabaseName(id uint, name string, userID uint, ipAddress, userAgent string) error {
+	err := s.databaseRepo.UpdateDatabaseName(id, name)
 	if err != nil {
 		return err
 	}
@@ -213,25 +197,8 @@ func (s *DatabaseService) UpdateDatabaseNameWithLogging(id uint, name string, us
 }
 
 // DeleteDatabaseWithLogging soft deletes a database record with action logging
-func (s *DatabaseService) DeleteDatabaseWithLogging(id uint, userID uint, ipAddress, userAgent string) error {
+func (s *DatabaseService) DeleteDatabase(id uint, userID uint, ipAddress, userAgent string) error {
 	// Get the database name for logging before deletion
-	database, err := s.databaseRepo.GetByID(id)
-	if err != nil {
-		return fmt.Errorf("base de données introuvable: %v", err)
-	}
-
-	err = s.DeleteDatabase(id, userID)
-	if err != nil {
-		return err
-	}
-
-	// Log the action
-	s.logDatabaseAction(userID, "deleted", id, database.Name, ipAddress, userAgent)
-	return nil
-}
-
-// DeleteDatabase soft deletes a database record and all associated records (backups, schedules, restores)
-func (s *DatabaseService) DeleteDatabase(id uint, userID uint) error {
 	database, err := s.databaseRepo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("base de données introuvable: %v", err)
@@ -270,17 +237,17 @@ func (s *DatabaseService) DeleteDatabase(id uint, userID uint) error {
 
 	// Finally, soft delete the database record
 	fmt.Printf("[DELETE] Soft deleting database record ID %d\n", id)
-	return s.databaseRepo.SoftDelete(id)
+	err = s.databaseRepo.SoftDelete(id)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	s.logDatabaseAction(userID, "deleted", id, database.Name, ipAddress, userAgent)
+	return nil
 }
 
-// OLD FUNCTION TO CHECK IF PASSWORD IS ENCRYPTED
-// isEncryptedPassword checks if a password string appears to be encrypted (base64)
-//func isEncryptedPassword(password string) bool {
-// Simple check: encrypted passwords are base64 encoded and contain special chars
-//return len(password) > 20 && (password[len(password)-1] == '=' || strings.ContainsAny(password, "+/"))
-//}
-
-// NEW FUNCTION TO CHECK IF PASSWORD IS ENCRYPTED
+// isMyEncryptedPassword checks if a password string appears to be encrypted (base64)
 func isMyEncryptedPassword(password string) bool {
 	if password == "" {
 		return false

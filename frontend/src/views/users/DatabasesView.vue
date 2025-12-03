@@ -99,7 +99,7 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium mb-2">Utilisateur</label>
+            <label class="block text-sm font-medium mb-2">Utilisateur de la base de données</label>
             <input
               v-model="form.username"
               :required="!form.url"
@@ -108,7 +108,7 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium mb-2">Mot de passe</label>
+            <label class="block text-sm font-medium mb-2">Mot de passe de la base de données</label>
             <div class="relative">
               <input
                 v-model="form.password"
