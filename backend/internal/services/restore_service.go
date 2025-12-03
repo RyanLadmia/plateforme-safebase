@@ -18,11 +18,12 @@ type RestoreWorkerPoolInterface interface {
 }
 
 type RestoreService struct {
-	restoreRepo     *repositories.RestoreRepository
-	backupService   *BackupService
-	databaseService *DatabaseService
-	userService     *UserService
-	workerPool      RestoreWorkerPoolInterface
+	restoreRepo          *repositories.RestoreRepository
+	backupService        *BackupService
+	databaseService      *DatabaseService
+	userService          *UserService
+	workerPool           RestoreWorkerPoolInterface
+	actionHistoryService *ActionHistoryService
 }
 
 // Constructor for RestoreService
@@ -33,6 +34,11 @@ func NewRestoreService(restoreRepo *repositories.RestoreRepository, backupServic
 		databaseService: databaseService,
 		userService:     userService,
 	}
+}
+
+// SetActionHistoryService sets the action history service reference for logging
+func (s *RestoreService) SetActionHistoryService(actionHistoryService *ActionHistoryService) {
+	s.actionHistoryService = actionHistoryService
 }
 
 // SetWorkerPool sets the worker pool for background tasks
@@ -317,4 +323,27 @@ func (s *RestoreService) GetRestoresByBackup(backupID uint) ([]models.Restore, e
 // GetRestoreByID returns a restore by ID
 func (s *RestoreService) GetRestoreByID(id uint) (*models.Restore, error) {
 	return s.restoreRepo.GetByID(id)
+}
+
+// Logging methods for action history
+
+// CreateRestoreWithLogging creates a restore operation and logs the action
+func (s *RestoreService) CreateRestoreWithLogging(backupID uint, databaseID uint, userID uint, ipAddress string, userAgent string) (*models.Restore, error) {
+	restore, err := s.CreateRestore(backupID, databaseID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"restore_id":  restore.Id,
+			"backup_id":   restore.BackupId,
+			"database_id": restore.DatabaseId,
+			"status":      restore.Status,
+		}
+		s.actionHistoryService.LogAction(userID, "create", "restore", restore.Id, "Restauration créée", metadata, ipAddress, userAgent)
+	}
+
+	return restore, nil
 }

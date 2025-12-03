@@ -192,8 +192,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import type { ActivityType, HistoryItem } from '@/types/history'
+import { ref, computed, onMounted, watch } from 'vue'
+import type { ActivityType, HistoryItem, HistoryResponse } from '@/types/history'
+import { historyService } from '@/services/history_service'
 
 // State
 const loading = ref(false)
@@ -201,92 +202,8 @@ const error = ref('')
 const activeFilter = ref<ActivityType>('all')
 const currentPage = ref(1)
 const itemsPerPage = 10
-
-// Mock data - À remplacer par l'appel API réel
-const mockHistory: HistoryItem[] = [
-  {
-    id: 1,
-    action: 'created',
-    resource_type: 'database',
-    resource_id: 1,
-    description: 'Base de données "production_db" créée avec succès',
-    created_at: '2024-12-03T10:30:00Z',
-    user_id: 1,
-    metadata: { database_name: 'production_db', type: 'postgresql' }
-  },
-  {
-    id: 2,
-    action: 'created',
-    resource_type: 'backup',
-    resource_id: 1,
-    description: 'Sauvegarde automatique de "production_db" démarrée',
-    created_at: '2024-12-03T10:35:00Z',
-    user_id: 1,
-    metadata: { database_name: 'production_db', size: '1.2GB' }
-  },
-  {
-    id: 3,
-    action: 'completed',
-    resource_type: 'backup',
-    resource_id: 1,
-    description: 'Sauvegarde de "production_db" terminée avec succès',
-    created_at: '2024-12-03T10:45:00Z',
-    user_id: 1,
-    metadata: { database_name: 'production_db', size: '1.2GB', duration: '10min' }
-  },
-  {
-    id: 4,
-    action: 'created',
-    resource_type: 'schedule',
-    resource_id: 1,
-    description: 'Planification quotidienne créée pour "production_db"',
-    created_at: '2024-12-03T11:00:00Z',
-    user_id: 1,
-    metadata: { database_name: 'production_db', frequency: 'daily', time: '02:00' }
-  },
-  {
-    id: 5,
-    action: 'created',
-    resource_type: 'restore',
-    resource_id: 1,
-    description: 'Restauration lancée pour "production_db" à partir de backup_20241203_104500',
-    created_at: '2024-12-03T14:30:00Z',
-    user_id: 1,
-    metadata: { database_name: 'production_db', backup_file: 'backup_20241203_104500.sql' }
-  },
-  {
-    id: 6,
-    action: 'completed',
-    resource_type: 'restore',
-    resource_id: 1,
-    description: 'Restauration de "production_db" terminée avec succès',
-    created_at: '2024-12-03T14:45:00Z',
-    user_id: 1,
-    metadata: { database_name: 'production_db', duration: '15min' }
-  },
-  {
-    id: 7,
-    action: 'updated',
-    resource_type: 'database',
-    resource_id: 1,
-    description: 'Configuration de "production_db" mise à jour',
-    created_at: '2024-12-03T15:00:00Z',
-    user_id: 1,
-    metadata: { database_name: 'production_db', changes: ['host', 'port'] }
-  },
-  {
-    id: 8,
-    action: 'deleted',
-    resource_type: 'backup',
-    resource_id: 2,
-    description: 'Ancienne sauvegarde supprimée pour optimisation',
-    created_at: '2024-12-03T16:00:00Z',
-    user_id: 1,
-    metadata: { database_name: 'production_db', size: '800MB' }
-  }
-]
-
-const history = ref<HistoryItem[]>(mockHistory)
+const history = ref<HistoryItem[]>([])
+const totalItems = ref(0)
 
 // Computed
 const filteredHistory = computed(() => {
@@ -303,7 +220,7 @@ const filteredHistory = computed(() => {
   return filtered.slice(start, end)
 })
 
-const totalActivities = computed(() => history.value.length)
+const totalActivities = computed(() => totalItems.value)
 
 const databaseActivities = computed(() =>
   history.value.filter(item => item.resource_type === 'database')
@@ -323,9 +240,9 @@ const restoreActivities = computed(() =>
 
 const totalPages = computed(() => {
   const filtered = activeFilter.value === 'all'
-    ? history.value
-    : history.value.filter(item => item.resource_type === activeFilter.value)
-  return Math.ceil(filtered.length / itemsPerPage)
+    ? totalItems.value
+    : history.value.filter(item => item.resource_type === activeFilter.value).length
+  return Math.ceil(filtered / itemsPerPage)
 })
 
 const visiblePages = computed(() => {
@@ -352,77 +269,53 @@ const visiblePages = computed(() => {
 
 // Methods
 const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return historyService.formatDate(dateString)
 }
 
 const getActionIconClass = (item: HistoryItem): string => {
-  const colorClasses = {
-    created: 'bg-green-500',
-    updated: 'bg-blue-500',
-    deleted: 'bg-red-500',
-    completed: 'bg-green-500',
-    failed: 'bg-red-500',
-    executed: 'bg-blue-500'
-  }
-
-  return colorClasses[item.action as keyof typeof colorClasses] || 'bg-gray-500'
+  return historyService.getActionIconClass(item.action)
 }
 
 const getActionText = (item: HistoryItem): string => {
-  const actionTexts = {
-    created: 'Créé',
-    updated: 'Modifié',
-    deleted: 'Supprimé',
-    completed: 'Terminé',
-    failed: 'Échoué',
-    executed: 'Exécuté'
-  }
-
-  return actionTexts[item.action as keyof typeof actionTexts] || item.action
+  return historyService.getActionText(item.action)
 }
 
 const getResourceTypeLabel = (type: string): string => {
-  const labels = {
-    database: 'Base de données',
-    backup: 'Sauvegarde',
-    schedule: 'Planification',
-    restore: 'Restauration'
-  }
-
-  return labels[type as keyof typeof labels] || type
+  return historyService.getResourceTypeLabel(type)
 }
 
 const getResourceTypeClass = (type: string): string => {
-  const classes = {
-    database: 'bg-purple-100 text-purple-800',
-    backup: 'bg-green-100 text-green-800',
-    schedule: 'bg-orange-100 text-orange-800',
-    restore: 'bg-indigo-100 text-indigo-800'
-  }
-
-  return classes[type as keyof typeof classes] || 'bg-gray-100 text-gray-800'
+  return historyService.getResourceTypeClass(type)
 }
 
-// Lifecycle
-onMounted(async () => {
+const loadHistory = async () => {
   loading.value = true
-  try {
-    // TODO: Remplacer par l'appel API réel
-    // const response = await historyService.getHistory()
-    // history.value = response.history
+  error.value = ''
 
-    // Simulation d'un délai de chargement
-    await new Promise(resolve => setTimeout(resolve, 1000))
+  try {
+    const response: HistoryResponse = await historyService.fetchHistoryByType(activeFilter.value, currentPage.value, itemsPerPage)
+    history.value = response.history
+    totalItems.value = response.total
   } catch (err: any) {
     error.value = err.message || 'Erreur lors du chargement de l\'historique'
+    console.error('Erreur chargement historique:', err)
   } finally {
     loading.value = false
   }
+}
+
+// Watch for filter changes
+watch(activeFilter, () => {
+  currentPage.value = 1
+  loadHistory()
+})
+
+watch(currentPage, () => {
+  loadHistory()
+})
+
+// Lifecycle
+onMounted(() => {
+  loadHistory()
 })
 </script>

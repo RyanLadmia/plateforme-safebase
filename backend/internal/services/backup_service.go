@@ -23,13 +23,14 @@ type WorkerPoolInterface interface {
 }
 
 type BackupService struct {
-	backupRepo      *repositories.BackupRepository
-	databaseService *DatabaseService
-	userService     *UserService
-	backupDir       string
-	workerPool      WorkerPoolInterface
-	cloudStorage    CloudStorageService // Generic cloud storage interface
-	encryption      *EncryptionService  // Encryption service for files
+	backupRepo           *repositories.BackupRepository
+	databaseService      *DatabaseService
+	userService          *UserService
+	backupDir            string
+	workerPool           WorkerPoolInterface
+	cloudStorage         CloudStorageService // Generic cloud storage interface
+	encryption           *EncryptionService  // Encryption service for files
+	actionHistoryService *ActionHistoryService
 }
 
 // Constructor for BackupService
@@ -40,6 +41,11 @@ func NewBackupService(backupRepo *repositories.BackupRepository, databaseService
 		userService:     userService,
 		backupDir:       backupDir,
 	}
+}
+
+// SetActionHistoryService sets the action history service reference for logging
+func (s *BackupService) SetActionHistoryService(actionHistoryService *ActionHistoryService) {
+	s.actionHistoryService = actionHistoryService
 }
 
 // generateBackupFilename generates a consistent filename for backups
@@ -742,4 +748,96 @@ func (s *BackupService) DeleteBackup(id uint, userID uint) error {
 
 	// Delete record from database
 	return s.backupRepo.Delete(id)
+}
+
+// Logging methods for action history
+
+// CreateBackupWithLogging creates a backup and logs the action
+func (s *BackupService) CreateBackupWithLogging(databaseID uint, userID uint, ipAddress string, userAgent string) (*models.Backup, error) {
+	backup, err := s.CreateBackup(databaseID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"backup_id":   backup.Id,
+			"database_id": backup.DatabaseId,
+			"filename":    backup.Filename,
+			"size":        backup.Size,
+			"filepath":    backup.Filepath,
+		}
+		s.actionHistoryService.LogAction(userID, "create", "backup", backup.Id, "Sauvegarde créée", metadata, ipAddress, userAgent)
+	}
+
+	return backup, nil
+}
+
+// DeleteBackupWithLogging deletes a backup and logs the action
+func (s *BackupService) DeleteBackupWithLogging(id uint, userID uint, ipAddress string, userAgent string) error {
+	backup, err := s.backupRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("sauvegarde introuvable: %v", err)
+	}
+
+	// Verify user ownership
+	if backup.UserId != userID {
+		return fmt.Errorf("accès non autorisé à cette sauvegarde")
+	}
+
+	// Delete from cloud storage
+	if s.cloudStorage != nil {
+		if err := s.cloudStorage.DeleteFile(backup.Filepath); err != nil {
+			fmt.Printf("[BACKUP] Warning: failed to delete from cloud storage: %v\n", err)
+			return fmt.Errorf("erreur lors de la suppression du fichier cloud: %v", err)
+		}
+	} else {
+		return fmt.Errorf("service de stockage cloud non disponible")
+	}
+
+	// Delete record from database
+	err = s.backupRepo.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"backup_id":   backup.Id,
+			"database_id": backup.DatabaseId,
+			"filename":    backup.Filename,
+			"size":        backup.Size,
+			"filepath":    backup.Filepath,
+		}
+		s.actionHistoryService.LogAction(userID, "delete", "backup", backup.Id, "Sauvegarde supprimée", metadata, ipAddress, userAgent)
+	}
+
+	return nil
+}
+
+// DownloadBackupWithLogging downloads a backup and logs the action
+func (s *BackupService) DownloadBackupWithLogging(id uint, userID uint, ipAddress string, userAgent string) ([]byte, error) {
+	data, err := s.DownloadBackup(id, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		backup, _ := s.backupRepo.GetByID(id)
+		if backup != nil {
+			metadata := map[string]interface{}{
+				"backup_id":   backup.Id,
+				"database_id": backup.DatabaseId,
+				"filename":    backup.Filename,
+				"size":        backup.Size,
+				"filepath":    backup.Filepath,
+			}
+			s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, "Sauvegarde téléchargée", metadata, ipAddress, userAgent)
+		}
+	}
+
+	return data, nil
 }

@@ -30,14 +30,15 @@ func main() {
 	log.Println(config.Yellow + "Running database migrations..." + config.Reset)
 
 	if err := database.AutoMigrate(
-		&models.Role{},     // Role table
-		&models.User{},     // User table
-		&models.Session{},  // Session table
-		&models.Database{}, // Database table
-		&models.Backup{},   // Backup table
-		&models.Schedule{}, // Schedule table
-		&models.Restore{},  // Restore table
-		// &models.Alert{},   // Alert table (for later)
+		&models.Role{},          // Role table
+		&models.User{},          // User table
+		&models.Session{},       // Session table
+		&models.Database{},      // Database table
+		&models.Backup{},        // Backup table
+		&models.Schedule{},      // Schedule table
+		&models.Restore{},       // Restore table
+		&models.ActionHistory{}, // Action history table
+		// &models.Alert{},         // Alert table (for later)
 	); err != nil {
 		log.Fatalf(config.Red+"Failed to migrate database: %v"+config.Reset, err)
 	}
@@ -54,6 +55,7 @@ func main() {
 	scheduleRepo := repositories.NewScheduleRepository(database)
 	roleRepo := repositories.NewRoleRepository(database)
 	restoreRepo := repositories.NewRestoreRepository(database)
+	actionHistoryRepo := repositories.NewActionHistoryRepository(database)
 
 	// Initialize services (business logic)
 	authService := services.NewAuthService(
@@ -72,6 +74,13 @@ func main() {
 	databaseService.SetBackupService(backupService)
 	scheduleService := services.NewScheduleService(scheduleRepo, databaseRepo, backupService)
 	restoreService := services.NewRestoreService(restoreRepo, backupService, databaseService, userService)
+	actionHistoryService := services.NewActionHistoryService(actionHistoryRepo)
+
+	// Set action history service for all services that need logging
+	databaseService.SetActionHistoryService(actionHistoryService)
+	backupService.SetActionHistoryService(actionHistoryService)
+	scheduleService.SetActionHistoryService(actionHistoryService)
+	restoreService.SetActionHistoryService(actionHistoryService)
 
 	// Initialize Mega service for cloud storage
 	megaConfig := config.GetMegaConfig()
@@ -111,6 +120,7 @@ func main() {
 	scheduleHandler := handlers.NewScheduleHandler(scheduleService)
 	userHandler := handlers.NewUserHandler(userService)
 	restoreHandler := handlers.NewRestoreHandler(restoreService)
+	actionHistoryHandler := handlers.NewActionHistoryHandler(actionHistoryService)
 
 	// Initialize middleware
 	authMiddleware := middlewares.NewAuthMiddleware(cfg.JWT_SECRET)
@@ -137,6 +147,7 @@ func main() {
 	routes.SetupScheduleRoutes(server, scheduleHandler, authMiddleware)
 	routes.SetupRestoreRoutes(server, restoreHandler, authMiddleware)
 	routes.UserRoutes(server, userHandler, authMiddleware)
+	routes.SetupActionHistoryRoutes(server, actionHistoryHandler, authMiddleware)
 
 	// Initialize worker pool for background tasks
 	workerPool := utils.NewWorkerPool(5) // 5 workers

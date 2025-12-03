@@ -35,7 +35,11 @@ func (h *BackupHandler) CreateBackup(c *gin.Context) {
 		return
 	}
 
-	backup, err := h.backupService.CreateBackup(uint(databaseID), userID.(uint))
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
+	backup, err := h.backupService.CreateBackupWithLogging(uint(databaseID), userID.(uint), ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création de la sauvegarde: " + err.Error()})
 		return
@@ -151,7 +155,11 @@ func (h *BackupHandler) DeleteBackup(c *gin.Context) {
 		return
 	}
 
-	if err := h.backupService.DeleteBackup(uint(id), userID.(uint)); err != nil {
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
+	if err := h.backupService.DeleteBackupWithLogging(uint(id), userID.(uint), ipAddress, userAgent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la suppression: " + err.Error()})
 		return
 	}
@@ -195,8 +203,12 @@ func (h *BackupHandler) DownloadBackup(c *gin.Context) {
 		return
 	}
 
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
 	// Download the file data from the service (MinIO or local)
-	fileData, err := h.backupService.DownloadBackup(uint(id), userID.(uint))
+	fileData, err := h.backupService.DownloadBackupWithLogging(uint(id), userID.(uint), ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors du téléchargement: " + err.Error()})
 		return

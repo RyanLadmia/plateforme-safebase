@@ -9,11 +9,12 @@ import (
 )
 
 type ScheduleService struct {
-	scheduleRepo  *repositories.ScheduleRepository
-	databaseRepo  *repositories.DatabaseRepository
-	backupService *BackupService
-	cronScheduler *cron.Cron
-	jobs          map[uint]cron.EntryID // key: schedule ID
+	scheduleRepo         *repositories.ScheduleRepository
+	databaseRepo         *repositories.DatabaseRepository
+	backupService        *BackupService
+	cronScheduler        *cron.Cron
+	jobs                 map[uint]cron.EntryID // key: schedule ID
+	actionHistoryService *ActionHistoryService
 }
 
 // Constructor of the ScheduleService
@@ -26,6 +27,11 @@ func NewScheduleService(scheduleRepo *repositories.ScheduleRepository, databaseR
 		jobs:          make(map[uint]cron.EntryID),
 	}
 	return s
+}
+
+// SetActionHistoryService sets the action history service reference for logging
+func (s *ScheduleService) SetActionHistoryService(actionHistoryService *ActionHistoryService) {
+	s.actionHistoryService = actionHistoryService
 }
 
 // Start the cron scheduler
@@ -198,5 +204,80 @@ func (s *ScheduleService) LoadActiveSchedules() error {
 		}
 		s.jobs[schedule.Id] = jobID
 	}
+	return nil
+}
+
+// Logging methods for action history
+
+// CreateScheduleWithLogging creates a new schedule and logs the action
+func (s *ScheduleService) CreateScheduleWithLogging(databaseID uint, userID uint, cronExpression string, ipAddress string, userAgent string) (*models.Schedule, error) {
+	schedule, err := s.CreateSchedule(databaseID, userID, cronExpression)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"schedule_id":     schedule.Id,
+			"database_id":     schedule.DatabaseId,
+			"cron_expression": schedule.CronExpression,
+			"active":          schedule.Active,
+		}
+		s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, "Planification créée", metadata, ipAddress, userAgent)
+	}
+
+	return schedule, nil
+}
+
+// UpdateScheduleWithLogging updates a schedule and logs the action
+func (s *ScheduleService) UpdateScheduleWithLogging(id uint, userID uint, cronExpression string, active bool, ipAddress string, userAgent string) (*models.Schedule, error) {
+	schedule, err := s.UpdateSchedule(id, userID, cronExpression, active)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"schedule_id":     schedule.Id,
+			"database_id":     schedule.DatabaseId,
+			"cron_expression": schedule.CronExpression,
+			"active":          schedule.Active,
+		}
+		s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
+	}
+
+	return schedule, nil
+}
+
+// DeleteScheduleWithLogging deletes a schedule and logs the action
+func (s *ScheduleService) DeleteScheduleWithLogging(id uint, userID uint, ipAddress string, userAgent string) error {
+	schedule, err := s.scheduleRepo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Verify user ownership
+	if schedule.UserId != userID {
+		return fmt.Errorf("accès non autorisé")
+	}
+
+	err = s.DeleteSchedule(id, userID)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"schedule_id":     schedule.Id,
+			"database_id":     schedule.DatabaseId,
+			"cron_expression": schedule.CronExpression,
+			"active":          schedule.Active,
+		}
+		s.actionHistoryService.LogAction(userID, "delete", "schedule", schedule.Id, "Planification supprimée", metadata, ipAddress, userAgent)
+	}
+
 	return nil
 }

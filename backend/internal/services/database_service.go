@@ -10,11 +10,12 @@ import (
 )
 
 type DatabaseService struct {
-	databaseRepo  *repositories.DatabaseRepository
-	backupRepo    *repositories.BackupRepository
-	restoreRepo   *repositories.RestoreRepository
-	scheduleRepo  *repositories.ScheduleRepository
-	backupService *BackupService
+	databaseRepo         *repositories.DatabaseRepository
+	backupRepo           *repositories.BackupRepository
+	restoreRepo          *repositories.RestoreRepository
+	scheduleRepo         *repositories.ScheduleRepository
+	backupService        *BackupService
+	actionHistoryService *ActionHistoryService
 }
 
 // Constructor for DatabaseService
@@ -31,6 +32,11 @@ func NewDatabaseService(databaseRepo *repositories.DatabaseRepository, backupRep
 // SetBackupService sets the backup service reference for cascade deletion
 func (s *DatabaseService) SetBackupService(backupService *BackupService) {
 	s.backupService = backupService
+}
+
+// SetActionHistoryService sets the action history service reference for logging
+func (s *DatabaseService) SetActionHistoryService(actionHistoryService *ActionHistoryService) {
+	s.actionHistoryService = actionHistoryService
 }
 
 // CreateDatabase creates a new database record
@@ -66,9 +72,24 @@ func (s *DatabaseService) CreateDatabase(database *models.Database) error {
 	return s.databaseRepo.Create(database)
 }
 
+// LogDatabaseAction logs a database action if action history service is available
+func (s *DatabaseService) logDatabaseAction(userID uint, action string, databaseID uint, databaseName string, ipAddress, userAgent string) {
+	if s.actionHistoryService != nil {
+		err := s.actionHistoryService.LogDatabaseAction(userID, action, databaseID, databaseName, ipAddress, userAgent)
+		if err != nil {
+			fmt.Printf("[HISTORY] Failed to log database action %s for database %d: %v\n", action, databaseID, err)
+		}
+	}
+}
+
 // GetDatabasesByUser returns all databases for a user (without decrypted passwords for security)
 func (s *DatabaseService) GetDatabasesByUser(userID uint) ([]models.Database, error) {
 	return s.databaseRepo.GetByUserID(userID)
+}
+
+// GetBackupsByDatabase returns all backups for a database
+func (s *DatabaseService) GetBackupsByDatabase(databaseID uint) ([]models.Backup, error) {
+	return s.backupRepo.GetByDatabaseID(databaseID)
 }
 
 // GetDatabaseByID returns a database by ID
@@ -155,9 +176,58 @@ func (s *DatabaseService) UpdateDatabaseName(id uint, name string) error {
 	return s.databaseRepo.UpdateDatabaseName(id, strings.TrimSpace(name))
 }
 
-// GetBackupsByDatabase returns all backups for a database
-func (s *DatabaseService) GetBackupsByDatabase(databaseID uint) ([]models.Backup, error) {
-	return s.backupRepo.GetByDatabaseID(databaseID)
+// CreateDatabaseWithLogging creates a new database record with action logging
+func (s *DatabaseService) CreateDatabaseWithLogging(database *models.Database, userID uint, ipAddress, userAgent string) error {
+	err := s.CreateDatabase(database)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	s.logDatabaseAction(userID, "created", database.Id, database.Name, ipAddress, userAgent)
+	return nil
+}
+
+// UpdateDatabaseWithLogging updates a database record with action logging
+func (s *DatabaseService) UpdateDatabaseWithLogging(database *models.Database, userID uint, ipAddress, userAgent string) error {
+	err := s.UpdateDatabase(database)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	s.logDatabaseAction(userID, "updated", database.Id, database.Name, ipAddress, userAgent)
+	return nil
+}
+
+// UpdateDatabaseNameWithLogging updates only the name of a database with action logging
+func (s *DatabaseService) UpdateDatabaseNameWithLogging(id uint, name string, userID uint, ipAddress, userAgent string) error {
+	err := s.UpdateDatabaseName(id, name)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	s.logDatabaseAction(userID, "updated", id, name, ipAddress, userAgent)
+	return nil
+}
+
+// DeleteDatabaseWithLogging soft deletes a database record with action logging
+func (s *DatabaseService) DeleteDatabaseWithLogging(id uint, userID uint, ipAddress, userAgent string) error {
+	// Get the database name for logging before deletion
+	database, err := s.databaseRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("base de données introuvable: %v", err)
+	}
+
+	err = s.DeleteDatabase(id, userID)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	s.logDatabaseAction(userID, "deleted", id, database.Name, ipAddress, userAgent)
+	return nil
 }
 
 // DeleteDatabase soft deletes a database record and all associated records (backups, schedules, restores)
