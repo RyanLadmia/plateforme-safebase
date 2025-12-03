@@ -97,12 +97,13 @@ export class HistoryService {
    */
   getActionText(action: string): string {
     const actionTexts: Record<string, string> = {
-      created: 'Créé',
-      updated: 'Modifié',
-      deleted: 'Supprimé',
+      create: 'Créé',
+      update: 'Modifié',
+      delete: 'Supprimé',
       completed: 'Terminé',
       failed: 'Échoué',
-      executed: 'Exécuté'
+      executed: 'Exécuté',
+      download: 'Téléchargé'
     }
 
     return actionTexts[action] || action
@@ -113,12 +114,13 @@ export class HistoryService {
    */
   getActionIconClass(action: string): string {
     const colorClasses: Record<string, string> = {
-      created: 'bg-green-500',
-      updated: 'bg-blue-500',
-      deleted: 'bg-red-500',
+      create: 'bg-green-500',
+      update: 'bg-blue-500',
+      delete: 'bg-red-500',
       completed: 'bg-green-500',
       failed: 'bg-red-500',
-      executed: 'bg-blue-500'
+      executed: 'bg-blue-500',
+      download: 'bg-purple-500'
     }
 
     return colorClasses[action] || 'bg-gray-500'

@@ -21,28 +21,28 @@
             :class="activeFilter === 'database' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'"
             class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
           >
-            Bases de données ({{ databaseActivities.length }})
+            Bases de données ({{ databaseActivities }})
           </button>
           <button
             @click="activeFilter = 'backup'"
             :class="activeFilter === 'backup' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'"
             class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
           >
-            Sauvegardes ({{ backupActivities.length }})
+            Sauvegardes ({{ backupActivities }})
           </button>
           <button
             @click="activeFilter = 'schedule'"
             :class="activeFilter === 'schedule' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'"
             class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
           >
-            Planifications ({{ scheduleActivities.length }})
+            Planifications ({{ scheduleActivities }})
           </button>
           <button
             @click="activeFilter = 'restore'"
             :class="activeFilter === 'restore' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
             class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
           >
-            Restaurations ({{ restoreActivities.length }})
+            Restaurations ({{ restoreActivities }})
           </button>
         </div>
       </div>
@@ -55,19 +55,19 @@
         </div>
         <div class="bg-white rounded-lg shadow p-4">
           <p class="text-gray-500 text-sm">Bases de données</p>
-          <p class="text-2xl font-bold text-purple-600">{{ databaseActivities.length }}</p>
+          <p class="text-2xl font-bold text-purple-600">{{ databaseActivities }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4">
           <p class="text-gray-500 text-sm">Sauvegardes</p>
-          <p class="text-2xl font-bold text-green-600">{{ backupActivities.length }}</p>
+          <p class="text-2xl font-bold text-green-600">{{ backupActivities }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4">
           <p class="text-gray-500 text-sm">Planifications</p>
-          <p class="text-2xl font-bold text-orange-600">{{ scheduleActivities.length }}</p>
+          <p class="text-2xl font-bold text-orange-600">{{ scheduleActivities }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4">
           <p class="text-gray-500 text-sm">Restaurations</p>
-          <p class="text-2xl font-bold text-indigo-600">{{ restoreActivities.length }}</p>
+          <p class="text-2xl font-bold text-indigo-600">{{ restoreActivities }}</p>
         </div>
       </div>
 
@@ -98,13 +98,13 @@
                   :class="getActionIconClass(item)"
                   class="w-10 h-10 rounded-full flex items-center justify-center"
                 >
-                  <svg v-if="item.action === 'created'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg v-if="item.action === 'create'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
-                  <svg v-else-if="item.action === 'updated'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg v-else-if="item.action === 'update'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                   </svg>
-                  <svg v-else-if="item.action === 'deleted'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg v-else-if="item.action === 'delete'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                   </svg>
                   <svg v-else-if="item.action === 'completed'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,6 +115,9 @@
                   </svg>
                   <svg v-else-if="item.action === 'executed'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H15m-3-3h3a1 1 0 011 1v3a1 1 0 01-1 1h-3m-3-3h-3a1 1 0 00-1 1v3a1 1 0 001 1h3m-3-3v-3a1 1 0 011-1h3z"></path>
+                  </svg>
+                  <svg v-else-if="item.action === 'download'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                   </svg>
                   <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -204,45 +207,32 @@ const currentPage = ref(1)
 const itemsPerPage = 10
 const history = ref<HistoryItem[]>([])
 const totalItems = ref(0)
+const totalByType = ref<Record<ActivityType, number>>({
+  all: 0,
+  database: 0,
+  backup: 0,
+  schedule: 0,
+  restore: 0
+})
 
 // Computed
 const filteredHistory = computed(() => {
-  let filtered = history.value
-
-  if (activeFilter.value !== 'all') {
-    filtered = filtered.filter(item => item.resource_type === activeFilter.value)
-  }
-
-  // Pagination
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-
-  return filtered.slice(start, end)
+  return history.value
 })
 
-const totalActivities = computed(() => totalItems.value)
+const totalActivities = computed(() => totalByType.value.all)
 
-const databaseActivities = computed(() =>
-  history.value.filter(item => item.resource_type === 'database')
-)
+const databaseActivities = computed(() => totalByType.value.database)
 
-const backupActivities = computed(() =>
-  history.value.filter(item => item.resource_type === 'backup')
-)
+const backupActivities = computed(() => totalByType.value.backup)
 
-const scheduleActivities = computed(() =>
-  history.value.filter(item => item.resource_type === 'schedule')
-)
+const scheduleActivities = computed(() => totalByType.value.schedule)
 
-const restoreActivities = computed(() =>
-  history.value.filter(item => item.resource_type === 'restore')
-)
+const restoreActivities = computed(() => totalByType.value.restore)
 
 const totalPages = computed(() => {
-  const filtered = activeFilter.value === 'all'
-    ? totalItems.value
-    : history.value.filter(item => item.resource_type === activeFilter.value).length
-  return Math.ceil(filtered / itemsPerPage)
+  const total = activeFilter.value === 'all' ? totalByType.value.all : totalByType.value[activeFilter.value]
+  return Math.ceil(total / itemsPerPage)
 })
 
 const visiblePages = computed(() => {
@@ -304,6 +294,24 @@ const loadHistory = async () => {
   }
 }
 
+const loadTotals = async () => {
+  try {
+    // Charger les totaux pour chaque type
+    const types: ActivityType[] = ['all', 'database', 'backup', 'schedule', 'restore']
+    const promises = types.map(async (type) => {
+      const response = await historyService.fetchHistoryByType(type, 1, 1)
+      return { type, total: response.total }
+    })
+
+    const results = await Promise.all(promises)
+    results.forEach(({ type, total }) => {
+      totalByType.value[type] = total
+    })
+  } catch (err: any) {
+    console.error('Erreur chargement totaux:', err)
+  }
+}
+
 // Watch for filter changes
 watch(activeFilter, () => {
   currentPage.value = 1
@@ -315,7 +323,8 @@ watch(currentPage, () => {
 })
 
 // Lifecycle
-onMounted(() => {
-  loadHistory()
+onMounted(async () => {
+  await loadTotals()
+  await loadHistory()
 })
 </script>
