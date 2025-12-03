@@ -97,6 +97,9 @@ export class HistoryService {
    */
   getActionText(action: string): string {
     const actionTexts: Record<string, string> = {
+      created: 'Créé',
+      updated: 'Modifié',
+      deleted: 'Supprimé',
       create: 'Créé',
       update: 'Modifié',
       delete: 'Supprimé',
@@ -114,6 +117,9 @@ export class HistoryService {
    */
   getActionIconClass(action: string): string {
     const colorClasses: Record<string, string> = {
+      created: 'bg-green-500',
+      updated: 'bg-blue-500',
+      deleted: 'bg-red-500',
       create: 'bg-green-500',
       update: 'bg-blue-500',
       delete: 'bg-red-500',
