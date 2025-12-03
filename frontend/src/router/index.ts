@@ -89,6 +89,15 @@ const routes: RouteRecordRaw[] = [
       title: 'Mes sauvegardes planifiées - SafeBase'
     }
   },
+  {
+    path: '/user/history',
+    name: 'user-history',
+    component: () => import('@/views/users/HistoryView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Historique - SafeBase'
+    }
+  },
 
   // Routes administrateur (rôle admin requis)
   {

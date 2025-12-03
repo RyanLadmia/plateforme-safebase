@@ -76,6 +76,19 @@
               <span class="hidden lg:inline">Planifications</span>
             </RouterLink>
 
+            <!-- Lien Historique (utilisateurs uniquement) -->
+            <RouterLink 
+              to="/user/history"
+              class="bg-white/10 hover:bg-white/20 px-2 md:px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm flex items-center space-x-1 md:space-x-2"
+              active-class="bg-white/30"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v3m0 0v3m0-3h3m-3 0H9"></path>
+              </svg>
+              <span class="hidden lg:inline">Historique</span>
+            </RouterLink>
+
             <!-- Dropdown utilisateur -->
             <div class="relative">
               <button 

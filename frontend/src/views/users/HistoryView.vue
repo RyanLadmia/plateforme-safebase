@@ -1,0 +1,428 @@
+<template>
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Historique des activités</h1>
+        <p class="text-gray-600 mt-2">Suivez toutes vos actions sur la plateforme</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap gap-2 sm:gap-4">
+          <button
+            @click="activeFilter = 'all'"
+            :class="activeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            Toutes les activités ({{ totalActivities }})
+          </button>
+          <button
+            @click="activeFilter = 'database'"
+            :class="activeFilter === 'database' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            Bases de données ({{ databaseActivities.length }})
+          </button>
+          <button
+            @click="activeFilter = 'backup'"
+            :class="activeFilter === 'backup' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            Sauvegardes ({{ backupActivities.length }})
+          </button>
+          <button
+            @click="activeFilter = 'schedule'"
+            :class="activeFilter === 'schedule' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            Planifications ({{ scheduleActivities.length }})
+          </button>
+          <button
+            @click="activeFilter = 'restore'"
+            :class="activeFilter === 'restore' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            Restaurations ({{ restoreActivities.length }})
+          </button>
+        </div>
+      </div>
+
+      <!-- Statistics -->
+      <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">Total activités</p>
+          <p class="text-2xl font-bold text-gray-900">{{ totalActivities }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">Bases de données</p>
+          <p class="text-2xl font-bold text-purple-600">{{ databaseActivities.length }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">Sauvegardes</p>
+          <p class="text-2xl font-bold text-green-600">{{ backupActivities.length }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">Planifications</p>
+          <p class="text-2xl font-bold text-orange-600">{{ scheduleActivities.length }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">Restaurations</p>
+          <p class="text-2xl font-bold text-indigo-600">{{ restoreActivities.length }}</p>
+        </div>
+      </div>
+
+      <!-- History List -->
+      <div v-if="loading" class="text-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p class="text-gray-500 mt-4">Chargement de l'historique...</p>
+      </div>
+      <div v-else-if="error" class="bg-red-100 text-red-700 p-4 rounded-lg">{{ error }}</div>
+      <div v-else-if="filteredHistory.length === 0" class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v3m0 0v3m0-3h3m-3 0H9"></path>
+        </svg>
+        <p class="text-gray-500 mt-4">Aucune activité trouvée pour ce filtre</p>
+      </div>
+      <div v-else class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="divide-y divide-gray-200">
+          <div
+            v-for="item in filteredHistory"
+            :key="item.id"
+            class="p-6 hover:bg-gray-50 transition-colors duration-200"
+          >
+            <div class="flex items-start space-x-4">
+              <!-- Icon -->
+              <div class="flex-shrink-0">
+                <div
+                  :class="getActionIconClass(item)"
+                  class="w-10 h-10 rounded-full flex items-center justify-center"
+                >
+                  <svg v-if="item.action === 'created'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <svg v-else-if="item.action === 'updated'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                  <svg v-else-if="item.action === 'deleted'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                  <svg v-else-if="item.action === 'completed'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <svg v-else-if="item.action === 'failed'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <svg v-else-if="item.action === 'executed'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H15m-3-3h3a1 1 0 011 1v3a1 1 0 01-1 1h-3m-3-3h-3a1 1 0 00-1 1v3a1 1 0 001 1h3m-3-3v-3a1 1 0 011-1h3z"></path>
+                  </svg>
+                  <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Content -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <p class="text-sm font-medium text-gray-900">
+                    {{ getActionText(item) }}
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    {{ formatDate(item.created_at) }}
+                  </p>
+                </div>
+                <p class="text-sm text-gray-600 mt-1">
+                  {{ item.description }}
+                </p>
+                <div class="flex items-center space-x-4 mt-2">
+                  <span
+                    :class="getResourceTypeClass(item.resource_type)"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  >
+                    {{ getResourceTypeLabel(item.resource_type) }}
+                  </span>
+                  <span class="text-xs text-gray-500">
+                    ID: {{ item.resource_id }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="mt-6 flex justify-center">
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+          <button
+            @click="currentPage = Math.max(1, currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+          </button>
+
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            @click="currentPage = typeof page === 'number' ? page : currentPage"
+            :class="page === currentPage ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'"
+            class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+            :disabled="typeof page !== 'number'"
+          >
+            {{ page }}
+          </button>
+
+          <button
+            @click="currentPage = Math.min(totalPages, currentPage + 1)"
+            :disabled="currentPage === totalPages"
+            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import type { ActivityType, HistoryItem } from '@/types/history'
+
+// State
+const loading = ref(false)
+const error = ref('')
+const activeFilter = ref<ActivityType>('all')
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+// Mock data - À remplacer par l'appel API réel
+const mockHistory: HistoryItem[] = [
+  {
+    id: 1,
+    action: 'created',
+    resource_type: 'database',
+    resource_id: 1,
+    description: 'Base de données "production_db" créée avec succès',
+    created_at: '2024-12-03T10:30:00Z',
+    user_id: 1,
+    metadata: { database_name: 'production_db', type: 'postgresql' }
+  },
+  {
+    id: 2,
+    action: 'created',
+    resource_type: 'backup',
+    resource_id: 1,
+    description: 'Sauvegarde automatique de "production_db" démarrée',
+    created_at: '2024-12-03T10:35:00Z',
+    user_id: 1,
+    metadata: { database_name: 'production_db', size: '1.2GB' }
+  },
+  {
+    id: 3,
+    action: 'completed',
+    resource_type: 'backup',
+    resource_id: 1,
+    description: 'Sauvegarde de "production_db" terminée avec succès',
+    created_at: '2024-12-03T10:45:00Z',
+    user_id: 1,
+    metadata: { database_name: 'production_db', size: '1.2GB', duration: '10min' }
+  },
+  {
+    id: 4,
+    action: 'created',
+    resource_type: 'schedule',
+    resource_id: 1,
+    description: 'Planification quotidienne créée pour "production_db"',
+    created_at: '2024-12-03T11:00:00Z',
+    user_id: 1,
+    metadata: { database_name: 'production_db', frequency: 'daily', time: '02:00' }
+  },
+  {
+    id: 5,
+    action: 'created',
+    resource_type: 'restore',
+    resource_id: 1,
+    description: 'Restauration lancée pour "production_db" à partir de backup_20241203_104500',
+    created_at: '2024-12-03T14:30:00Z',
+    user_id: 1,
+    metadata: { database_name: 'production_db', backup_file: 'backup_20241203_104500.sql' }
+  },
+  {
+    id: 6,
+    action: 'completed',
+    resource_type: 'restore',
+    resource_id: 1,
+    description: 'Restauration de "production_db" terminée avec succès',
+    created_at: '2024-12-03T14:45:00Z',
+    user_id: 1,
+    metadata: { database_name: 'production_db', duration: '15min' }
+  },
+  {
+    id: 7,
+    action: 'updated',
+    resource_type: 'database',
+    resource_id: 1,
+    description: 'Configuration de "production_db" mise à jour',
+    created_at: '2024-12-03T15:00:00Z',
+    user_id: 1,
+    metadata: { database_name: 'production_db', changes: ['host', 'port'] }
+  },
+  {
+    id: 8,
+    action: 'deleted',
+    resource_type: 'backup',
+    resource_id: 2,
+    description: 'Ancienne sauvegarde supprimée pour optimisation',
+    created_at: '2024-12-03T16:00:00Z',
+    user_id: 1,
+    metadata: { database_name: 'production_db', size: '800MB' }
+  }
+]
+
+const history = ref<HistoryItem[]>(mockHistory)
+
+// Computed
+const filteredHistory = computed(() => {
+  let filtered = history.value
+
+  if (activeFilter.value !== 'all') {
+    filtered = filtered.filter(item => item.resource_type === activeFilter.value)
+  }
+
+  // Pagination
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+
+  return filtered.slice(start, end)
+})
+
+const totalActivities = computed(() => history.value.length)
+
+const databaseActivities = computed(() =>
+  history.value.filter(item => item.resource_type === 'database')
+)
+
+const backupActivities = computed(() =>
+  history.value.filter(item => item.resource_type === 'backup')
+)
+
+const scheduleActivities = computed(() =>
+  history.value.filter(item => item.resource_type === 'schedule')
+)
+
+const restoreActivities = computed(() =>
+  history.value.filter(item => item.resource_type === 'restore')
+)
+
+const totalPages = computed(() => {
+  const filtered = activeFilter.value === 'all'
+    ? history.value
+    : history.value.filter(item => item.resource_type === activeFilter.value)
+  return Math.ceil(filtered.length / itemsPerPage)
+})
+
+const visiblePages = computed(() => {
+  const pages = []
+  const total = totalPages.value
+  const current = currentPage.value
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      pages.push(i)
+    }
+  } else {
+    if (current <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', total)
+    } else if (current >= total - 3) {
+      pages.push(1, '...', total - 4, total - 3, total - 2, total - 1, total)
+    } else {
+      pages.push(1, '...', current - 1, current, current + 1, '...', total)
+    }
+  }
+
+  return pages.filter(p => p !== '...' || typeof p === 'number')
+})
+
+// Methods
+const formatDate = (dateString: string): string => {
+  return new Date(dateString).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getActionIconClass = (item: HistoryItem): string => {
+  const colorClasses = {
+    created: 'bg-green-500',
+    updated: 'bg-blue-500',
+    deleted: 'bg-red-500',
+    completed: 'bg-green-500',
+    failed: 'bg-red-500',
+    executed: 'bg-blue-500'
+  }
+
+  return colorClasses[item.action as keyof typeof colorClasses] || 'bg-gray-500'
+}
+
+const getActionText = (item: HistoryItem): string => {
+  const actionTexts = {
+    created: 'Créé',
+    updated: 'Modifié',
+    deleted: 'Supprimé',
+    completed: 'Terminé',
+    failed: 'Échoué',
+    executed: 'Exécuté'
+  }
+
+  return actionTexts[item.action as keyof typeof actionTexts] || item.action
+}
+
+const getResourceTypeLabel = (type: string): string => {
+  const labels = {
+    database: 'Base de données',
+    backup: 'Sauvegarde',
+    schedule: 'Planification',
+    restore: 'Restauration'
+  }
+
+  return labels[type as keyof typeof labels] || type
+}
+
+const getResourceTypeClass = (type: string): string => {
+  const classes = {
+    database: 'bg-purple-100 text-purple-800',
+    backup: 'bg-green-100 text-green-800',
+    schedule: 'bg-orange-100 text-orange-800',
+    restore: 'bg-indigo-100 text-indigo-800'
+  }
+
+  return classes[type as keyof typeof classes] || 'bg-gray-100 text-gray-800'
+}
+
+// Lifecycle
+onMounted(async () => {
+  loading.value = true
+  try {
+    // TODO: Remplacer par l'appel API réel
+    // const response = await historyService.getHistory()
+    // history.value = response.history
+
+    // Simulation d'un délai de chargement
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  } catch (err: any) {
+    error.value = err.message || 'Erreur lors du chargement de l\'historique'
+  } finally {
+    loading.value = false
+  }
+})
+</script>
