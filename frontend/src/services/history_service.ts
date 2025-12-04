@@ -97,16 +97,19 @@ export class HistoryService {
    */
   getActionText(action: string): string {
     const actionTexts: Record<string, string> = {
-      created: 'Créé',
-      updated: 'Modifié',
-      deleted: 'Supprimé',
-      create: 'Créé',
-      update: 'Modifié',
-      delete: 'Supprimé',
-      completed: 'Terminé',
-      failed: 'Échoué',
-      executed: 'Exécuté',
-      download: 'Téléchargé'
+      // For BDD
+      created: 'Ajout',
+      updated: 'Modification',
+      deleted: 'Suppression',
+      // For Backups/Restores/Schedules
+      create: 'Création',
+      update: 'Modification',
+      delete: 'Suppression',
+      completed: 'Succès',
+      failed: 'Échec',
+      executed: 'Exécution',
+      download: 'Téléchargement',
+      restored: 'Restauration'
     }
 
     return actionTexts[action] || action
@@ -126,7 +129,8 @@ export class HistoryService {
       completed: 'bg-green-500',
       failed: 'bg-red-500',
       executed: 'bg-blue-500',
-      download: 'bg-purple-500'
+      download: 'bg-purple-500',
+      restored: 'bg-indigo-500'
     }
 
     return colorClasses[action] || 'bg-gray-500'
