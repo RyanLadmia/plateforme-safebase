@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/RyanLadmia/plateforme-safebase/internal/models"
 	"github.com/RyanLadmia/plateforme-safebase/internal/services"
@@ -41,6 +43,10 @@ func (h *DatabaseHandler) CreateDatabase(c *gin.Context) {
 		return
 	}
 
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
 	// Convert request to Database model
 	database := &models.Database{
 		Name:     request.Name,
@@ -54,7 +60,7 @@ func (h *DatabaseHandler) CreateDatabase(c *gin.Context) {
 		UserId:   userID.(uint),
 	}
 
-	if err := h.databaseService.CreateDatabase(database); err != nil {
+	if err := h.databaseService.CreateDatabase(database, userID.(uint), ipAddress, userAgent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création de la base de données: " + err.Error()})
 		return
 	}
@@ -144,6 +150,10 @@ func (h *DatabaseHandler) UpdateDatabase(c *gin.Context) {
 		return
 	}
 
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
 	// Get existing database
 	existingDatabase, err := h.databaseService.GetDatabaseByID(uint(id))
 	if err != nil {
@@ -181,7 +191,7 @@ func (h *DatabaseHandler) UpdateDatabase(c *gin.Context) {
 		existingDatabase.Password = request.Password
 	}
 
-	if err := h.databaseService.UpdateDatabase(existingDatabase); err != nil {
+	if err := h.databaseService.UpdateDatabase(existingDatabase, userID.(uint), ipAddress, userAgent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la mise à jour: " + err.Error()})
 		return
 	}
@@ -193,6 +203,140 @@ func (h *DatabaseHandler) UpdateDatabase(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "Base de données mise à jour avec succès",
 		"database": responseDb,
+	})
+}
+
+// UpdateDatabasePartial updates only the name of a database (secure partial update)
+func (h *DatabaseHandler) UpdateDatabasePartial(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalide"})
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilisateur non authentifié"})
+		return
+	}
+
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: Looking for database ID %d for user %d\n", id, userID.(uint))
+
+	// Get existing database
+	existingDatabase, err := h.databaseService.GetDatabaseByID(uint(id))
+	if err != nil {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: Database not found - error: %v\n", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Base de données introuvable"})
+		return
+	}
+
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: Found database %d, owner is %d, current user is %d\n", existingDatabase.Id, existingDatabase.UserId, userID.(uint))
+
+	// Verify user ownership
+	if existingDatabase.UserId != userID.(uint) {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: Access denied - database owner %d != user %d\n", existingDatabase.UserId, userID.(uint))
+		c.JSON(http.StatusForbidden, gin.H{"error": "Accès non autorisé"})
+		return
+	}
+
+	// Parse partial update request (only name for security)
+	var request struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides: " + err.Error()})
+		return
+	}
+
+	// Validate only the name (no URL validation for security)
+	if request.Name == "" || len(strings.TrimSpace(request.Name)) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Le nom de la base de données est requis"})
+		return
+	}
+
+	// Store old name for logging
+	newName := strings.TrimSpace(request.Name)
+
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: About to update database ID %d with name '%s'\n", existingDatabase.Id, newName)
+
+	if err := h.databaseService.UpdateDatabaseName(existingDatabase.Id, newName, userID.(uint), ipAddress, userAgent); err != nil {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: UpdateDatabaseNameWithLogging failed - error: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la mise à jour: " + err.Error()})
+		return
+	}
+
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: UpdateDatabaseNameWithLogging succeeded, now fetching updated database ID %d\n", existingDatabase.Id)
+
+	// Get the updated database to return it
+	updatedDatabase, err := h.databaseService.GetDatabaseByID(uint(existingDatabase.Id))
+	if err != nil {
+		fmt.Printf("[DEBUG] UpdateDatabasePartial: Failed to get updated database ID %d - error: %v\n", existingDatabase.Id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la récupération de la base mise à jour: " + err.Error()})
+		return
+	}
+
+	fmt.Printf("[DEBUG] UpdateDatabasePartial: Successfully retrieved updated database ID %d, name '%s'\n", updatedDatabase.Id, updatedDatabase.Name)
+
+	// Return database without sensitive data for security
+	responseDb := *updatedDatabase
+	responseDb.Password = "" // Don't expose password in response
+	responseDb.URL = ""      // Don't expose encrypted URL in response
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Base de données mise à jour avec succès",
+		"database": responseDb,
+	})
+}
+
+// GetDatabaseWithBackupCount returns a database by ID with backup count
+func (h *DatabaseHandler) GetDatabaseWithBackupCount(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalide"})
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilisateur non authentifié"})
+		return
+	}
+
+	database, err := h.databaseService.GetDatabaseByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Base de données introuvable"})
+		return
+	}
+
+	// Verify user ownership
+	if database.UserId != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Accès non autorisé"})
+		return
+	}
+
+	// Get backup count for this database
+	backups, err := h.databaseService.GetBackupsByDatabase(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la récupération des sauvegardes: " + err.Error()})
+		return
+	}
+
+	// Return database without sensitive data for security
+	responseDb := *database
+	responseDb.Password = "" // Don't expose password in response
+	responseDb.URL = ""      // Don't expose encrypted URL in response
+
+	c.JSON(http.StatusOK, gin.H{
+		"database":     responseDb,
+		"backup_count": len(backups),
 	})
 }
 
@@ -212,7 +356,12 @@ func (h *DatabaseHandler) DeleteDatabase(c *gin.Context) {
 		return
 	}
 
-	if err := h.databaseService.DeleteDatabase(uint(id), userID.(uint)); err != nil {
+	// Extract IP address and User-Agent for logging
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
+	// Delete the database with logging (service handles ownership verification)
+	if err := h.databaseService.DeleteDatabase(uint(id), userID.(uint), ipAddress, userAgent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la suppression: " + err.Error()})
 		return
 	}

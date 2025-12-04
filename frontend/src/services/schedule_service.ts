@@ -27,6 +27,9 @@ export class ScheduleService {
     if (!scheduleData.database_id || scheduleData.database_id <= 0) {
       throw new Error('ID de base de données invalide')
     }
+    if (!scheduleData.name || scheduleData.name.trim() === '') {
+      throw new Error('Nom de la planification requis')
+    }
     if (!scheduleData.cron_expression || scheduleData.cron_expression.trim() === '') {
       throw new Error('Expression cron requise')
     }

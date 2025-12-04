@@ -50,9 +50,9 @@ type Database struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserId    uint           `gorm:"index;not null" json:"user_id"`
 	User      User           `gorm:"foreignKey:UserId" json:"-"`
-	Backups   []Backup       `gorm:"foreignKey:DatabaseId;constraint:OnDelete:CASCADE;" json:"backups,omitempty"`
-	Restores  []Restore      `gorm:"foreignKey:DatabaseId;constraint:OnDelete:CASCADE;" json:"restores,omitempty"`
-	Schedules []Schedule     `gorm:"foreignKey:DatabaseId;constraint:OnDelete:CASCADE;" json:"schedules,omitempty"`
+	Backups   []Backup       `gorm:"foreignKey:DatabaseId" json:"backups,omitempty"`   // Soft delete instead of CASCADE
+	Restores  []Restore      `gorm:"foreignKey:DatabaseId" json:"restores,omitempty"`  // Soft delete instead of CASCADE
+	Schedules []Schedule     `gorm:"foreignKey:DatabaseId" json:"schedules,omitempty"` // Soft delete instead of CASCADE
 }
 
 // ParseDatabaseURL parses a database connection URL and extracts components

@@ -79,3 +79,8 @@ func (r *BackupRepository) GetDB() *gorm.DB {
 func (r *BackupRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Backup{}, id).Error
 }
+
+// Soft delete all backups for a database
+func (r *BackupRepository) SoftDeleteByDatabaseID(databaseID uint) error {
+	return r.db.Where("database_id = ?", databaseID).Delete(&models.Backup{}).Error
+}

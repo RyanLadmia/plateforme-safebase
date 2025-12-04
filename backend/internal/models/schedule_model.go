@@ -8,6 +8,7 @@ import (
 
 type Schedule struct {
 	Id             uint           `gorm:"primaryKey" json:"id"`
+	Name           string         `gorm:"size:255;not null" json:"name"`
 	CronExpression string         `gorm:"size:100;not null" json:"cron_expression"`
 	Active         bool           `gorm:"default:true" json:"active"`
 	CreatedAt      time.Time      `json:"created_at"`

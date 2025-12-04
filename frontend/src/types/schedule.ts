@@ -1,6 +1,7 @@
 // Types pour les schedules (tâches planifiées)
 export interface Schedule {
   id: number
+  name: string
   cron_expression: string
   active: boolean
   created_at: string
@@ -16,10 +17,12 @@ export interface Schedule {
 
 export interface ScheduleCreateRequest {
   database_id: number
+  name: string
   cron_expression: string
 }
 
 export interface ScheduleUpdateRequest {
+  name?: string
   cron_expression?: string
   active?: boolean
 }

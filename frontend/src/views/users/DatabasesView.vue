@@ -99,7 +99,7 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium mb-2">Utilisateur</label>
+            <label class="block text-sm font-medium mb-2">Utilisateur de la base de données</label>
             <input
               v-model="form.username"
               :required="!form.url"
@@ -108,7 +108,7 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium mb-2">Mot de passe</label>
+            <label class="block text-sm font-medium mb-2">Mot de passe de la base de données</label>
             <div class="relative">
               <input
                 v-model="form.password"
@@ -162,108 +162,43 @@
       </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- Delete Confirmation Modal -->
+
+
+    <!-- Edit Modal (Partial Update - Only Name) -->
     <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-        <h2 class="text-2xl font-bold mb-4">Modifier la base de données</h2>
-        <form @submit.prevent="updateDatabase" class="space-y-4">
+      <div class="bg-white rounded-lg max-w-md w-full p-6">
+        <h2 class="text-2xl font-bold mb-4">Modifier le nom</h2>
+        <form @submit.prevent="updateDatabaseName" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-2">Nom</label>
-            <input v-model="editForm.name" required class="w-full px-4 py-2 border rounded-lg" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Type</label>
-            <select v-model="editForm.type" class="w-full px-4 py-2 border rounded-lg">
-              <option value="postgresql">PostgreSQL</option>
-              <option value="mysql">MySQL</option>
-            </select>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium mb-2">Hôte</label>
-              <input
-                v-model="editForm.host"
-                :required="!editForm.url"
-                class="w-full px-4 py-2 border rounded-lg"
-                :placeholder="editForm.url ? 'Optionnel si URL fournie' : ''"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-2">Port</label>
-              <input
-                v-model="editForm.port"
-                :required="!editForm.url"
-                class="w-full px-4 py-2 border rounded-lg"
-                :placeholder="editForm.url ? 'Optionnel si URL fournie' : ''"
-              />
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Nom de la base</label>
-            <input
-              v-model="editForm.db_name"
-              :required="!editForm.url"
-              class="w-full px-4 py-2 border rounded-lg"
-              :placeholder="editForm.url ? 'Optionnel si URL fournie' : ''"
+            <label class="block text-sm font-medium mb-2">Nom de la base de données</label>
+            <input 
+              v-model="editForm.name" 
+              required 
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Entrez le nouveau nom"
             />
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Utilisateur</label>
-            <input
-              v-model="editForm.username"
-              :required="!editForm.url"
-              class="w-full px-4 py-2 border rounded-lg"
-              :placeholder="editForm.url ? 'Optionnel si URL fournie' : ''"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Mot de passe</label>
-            <div class="relative">
-              <input
-                v-model="editForm.password"
-                :type="showPassword ? 'text' : 'password'"
-                class="w-full px-4 py-2 pr-12 border rounded-lg"
-                placeholder="Laisser vide pour ne pas changer"
-              />
-              <button
-                type="button"
-                @click="showPassword = !showPassword"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
-              >
-                <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                </svg>
-                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                </svg>
-              </button>
+          
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-start">
+              <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <h3 class="text-sm font-medium text-blue-800">Modification sécurisée</h3>
+                <p class="text-sm text-blue-700 mt-1">
+                  Seuls le nom de la base de données peut être modifié. Les informations de connexion restent inchangées et sécurisées.
+                </p>
+              </div>
             </div>
-            <p class="text-xs text-gray-500 mt-1">Laisser vide pour conserver le mot de passe actuel</p>
           </div>
 
-          <!-- URL complète (optionnel) -->
-          <div>
-            <label class="block text-sm font-medium mb-2">
-              URL complète (optionnel)
-              <span class="text-xs text-gray-500 ml-2">Alternative aux champs individuels</span>
-            </label>
-            <input
-              v-model="editForm.url"
-              type="text"
-              class="w-full px-4 py-2 border rounded-lg"
-              placeholder="mysql://user:pass@host:port/db ou postgresql://user:pass@host:port/db"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Si fourni, les champs individuels ci-dessus seront ignorés et extraits de l'URL
-            </p>
-          </div>
           <div class="flex justify-end space-x-4">
-            <button type="button" @click="closeEditModal" class="px-6 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
+            <button type="button" @click="closeEditModal" class="px-6 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition-colors">
               Annuler
             </button>
-            <button type="submit" :disabled="formLoading" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <button type="submit" :disabled="formLoading" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
               {{ formLoading ? 'Mise à jour...' : 'Mettre à jour' }}
             </button>
           </div>
@@ -302,15 +237,8 @@ const form = reactive<DatabaseCreateRequest>({
   url: ''
 })
 
-const editForm = reactive<DatabaseUpdateRequest>({
-  name: '',
-  type: 'postgresql',
-  host: '',
-  port: '',
-  username: '',
-  password: '',
-  db_name: '',
-  url: ''
+const editForm = reactive({
+  name: ''
 })
 
 const createDatabase = async () => {
@@ -327,12 +255,33 @@ const createDatabase = async () => {
 }
 
 const deleteDatabase = async (id: number) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette base de données ?')) return
   try {
-    await databaseService.deleteDatabase(id)
-    safebaseStore.removeDatabase(id)
+    // Récupérer les détails de la base de données avec le nombre de sauvegardes
+    const details = await safebaseStore.getDatabaseWithBackupCountAsync(id)
+    
+    const backupCount = details.backup_count
+    const dbName = details.database.name
+    
+    let message = `Êtes-vous sûr de vouloir supprimer la base de données "${dbName}" ?`
+    
+    if (backupCount > 0) {
+      message += `\n\n⚠️ Cette action supprimera également ${backupCount} sauvegarde(s) associée(s) et tous les fichiers stockés dans le cloud.`
+    }
+    
+    message += `\n\nCette action est irréversible.`
+    
+    if (!confirm(message)) return
+    
+    await safebaseStore.deleteDatabaseAsync(id)
+    
+    let successMessage = 'Base de données supprimée avec succès !'
+    if (backupCount > 0) {
+      successMessage += ` (${backupCount} sauvegarde(s) supprimée(s) également)`
+    }
+    
+    alert(successMessage)
   } catch (err: any) {
-    alert(err.message)
+    alert('Erreur lors de la suppression: ' + err.message)
   }
 }
 
@@ -361,26 +310,24 @@ const closeModal = () => {
 
 const editDatabase = (db: Database) => {
   editingDatabase.value = db
-  Object.assign(editForm, {
-    name: db.name,
-    type: db.type,
-    host: db.host,
-    port: db.port,
-    username: db.username,
-    db_name: db.db_name,
-    url: db.url || '',
-    password: '' // Ne pas pré-remplir le mot de passe pour des raisons de sécurité
-  })
+  editForm.name = db.name // Only set the name for partial update
   showEditModal.value = true
 }
 
-const updateDatabase = async () => {
+const updateDatabaseName = async () => {
   if (!editingDatabase.value) return
 
   formLoading.value = true
   try {
-    const updatedDb = await databaseService.updateDatabase(editingDatabase.value.id, editForm)
-    safebaseStore.updateDatabase(updatedDb)
+    await safebaseStore.updateDatabasePartialAsync(editingDatabase.value.id, { name: editForm.name })
+    
+    // Mettre à jour editingDatabase avec la version fraîche du store
+    const updatedDb = safebaseStore.databases.find(db => db.id === editingDatabase.value!.id)
+    if (updatedDb) {
+      editingDatabase.value = updatedDb
+      editForm.name = updatedDb.name
+    }
+    
     closeEditModal()
   } catch (err: any) {
     alert(err.message)
@@ -392,16 +339,7 @@ const updateDatabase = async () => {
 const closeEditModal = () => {
   showEditModal.value = false
   editingDatabase.value = null
-  Object.assign(editForm, {
-    name: '',
-    type: 'postgresql',
-    host: '',
-    port: '',
-    username: '',
-    db_name: '',
-    url: '',
-    password: ''
-  })
+  editForm.name = ''
 }
 
 onMounted(() => {

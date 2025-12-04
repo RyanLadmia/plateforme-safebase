@@ -15,7 +15,9 @@ func SetupDatabaseRoutes(router *gin.Engine, databaseHandler *handlers.DatabaseH
 		databaseRoutes.POST("", databaseHandler.CreateDatabase)
 		databaseRoutes.GET("", databaseHandler.GetDatabases)
 		databaseRoutes.GET("/:id", databaseHandler.GetDatabase)
+		databaseRoutes.GET("/:id/details", databaseHandler.GetDatabaseWithBackupCount) // Get database with backup count
 		databaseRoutes.PUT("/:id", databaseHandler.UpdateDatabase)
+		databaseRoutes.PUT("/:id/partial", databaseHandler.UpdateDatabasePartial) // Secure partial update
 		databaseRoutes.DELETE("/:id", databaseHandler.DeleteDatabase)
 	}
 }

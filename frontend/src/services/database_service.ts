@@ -41,10 +41,15 @@ export class DatabaseService {
   }
 
   /**
-   * Supprime une base de données
+   * Met à jour partiellement une base de données (seulement le nom pour la sécurité)
    */
-  async deleteDatabase(id: number): Promise<void> {
-    await databaseApi.deleteDatabase(id)
+  async updateDatabasePartial(id: number, updates: { name: string }): Promise<Database> {
+    // Validation simple du nom
+    if (!updates.name || updates.name.trim() === '') {
+      throw new Error('Le nom de la base de données est requis')
+    }
+
+    return await databaseApi.updateDatabasePartial(id, { name: updates.name.trim() })
   }
 
   /**
@@ -107,6 +112,20 @@ export class DatabaseService {
     // Cette fonctionnalité nécessite un endpoint backend dédié
     console.warn('Test de connexion non implémenté côté backend')
     return true
+  }
+
+  /**
+   * Supprime une base de données
+   */
+  async deleteDatabase(id: number): Promise<void> {
+    await databaseApi.deleteDatabase(id)
+  }
+
+  /**
+   * Récupère une base de données avec le nombre de sauvegardes associées
+   */
+  async getDatabaseWithBackupCount(id: number): Promise<{ database: Database; backup_count: number }> {
+    return await databaseApi.getDatabaseWithBackupCount(id)
   }
 }
 

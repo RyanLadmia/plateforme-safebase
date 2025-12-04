@@ -41,8 +41,24 @@ export async function updateDatabase(id: number, databaseData: DatabaseUpdateReq
 }
 
 /**
+ * Met à jour partiellement une base de données (seulement le nom pour la sécurité)
+ */
+export async function updateDatabasePartial(id: number, updates: { name: string }): Promise<Database> {
+  const { data } = await apiClient.put<DatabaseResponse>(`/api/databases/${id}/partial`, updates)
+  return data.database
+}
+
+/**
  * Supprime une base de données
  */
 export async function deleteDatabase(id: number): Promise<void> {
   await apiClient.delete(`/api/databases/${id}`)
+}
+
+/**
+ * Récupère une base de données avec le nombre de sauvegardes associées
+ */
+export async function getDatabaseWithBackupCount(id: number): Promise<{ database: Database; backup_count: number }> {
+  const { data } = await apiClient.get<{ database: Database; backup_count: number }>(`/api/databases/${id}/details`)
+  return data
 }

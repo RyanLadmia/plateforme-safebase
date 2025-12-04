@@ -40,5 +40,9 @@ func DisplayEndpoints(port string) {
 	fmt.Printf("   PUT  /api/admin/users/:id               - Update user (admin)\n")
 	fmt.Printf("   PUT  /api/admin/users/:id/role          - Change user role (admin)\n")
 	fmt.Printf("   PUT  /api/admin/users/:id/deactivate    - Deactivate user (admin)\n")
-	fmt.Printf("   PUT  /api/admin/users/:id/activate      - Activate user (admin)\n" + config.Reset)
+	fmt.Printf("   PUT  /api/admin/users/:id/activate      - Activate user (admin)\n")
+	fmt.Printf("   GET  /api/history                       - Get user action history\n")
+	fmt.Printf("   GET  /api/history/type/:type            - Get action history by type\n")
+	fmt.Printf("   GET  /api/history/resource/:type/:id    - Get action history for resource\n")
+	fmt.Printf("   GET  /api/history/recent                - Get recent action history\n" + config.Reset)
 }

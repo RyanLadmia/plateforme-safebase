@@ -23,13 +23,14 @@ type WorkerPoolInterface interface {
 }
 
 type BackupService struct {
-	backupRepo      *repositories.BackupRepository
-	databaseService *DatabaseService
-	userService     *UserService
-	backupDir       string
-	workerPool      WorkerPoolInterface
-	cloudStorage    CloudStorageService // Generic cloud storage interface
-	encryption      *EncryptionService  // Encryption service for files
+	backupRepo           *repositories.BackupRepository
+	databaseService      *DatabaseService
+	userService          *UserService
+	backupDir            string
+	workerPool           WorkerPoolInterface
+	cloudStorage         CloudStorageService // Generic cloud storage interface
+	encryption           *EncryptionService  // Encryption service for files
+	actionHistoryService *ActionHistoryService
 }
 
 // Constructor for BackupService
@@ -42,9 +43,14 @@ func NewBackupService(backupRepo *repositories.BackupRepository, databaseService
 	}
 }
 
+// SetActionHistoryService sets the action history service reference for logging
+func (s *BackupService) SetActionHistoryService(actionHistoryService *ActionHistoryService) {
+	s.actionHistoryService = actionHistoryService
+}
+
 // generateBackupFilename generates a consistent filename for backups
 func (s *BackupService) generateBackupFilename(database *models.Database) string {
-	timestamp := time.Now().Format("20060102_150405")
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	return fmt.Sprintf("%s_%s_%s.zip", database.Name, database.Type, timestamp)
 }
 
@@ -194,44 +200,6 @@ func (s *BackupService) findExecutable(paths []string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("aucun exécutable trouvé dans les chemins testés")
-}
-
-// CreateBackup creates a backup for the specified database asynchronously
-func (s *BackupService) CreateBackup(databaseID uint, userID uint) (*models.Backup, error) {
-	// Get database info with decrypted password
-	database, err := s.databaseService.GetDatabaseByID(databaseID)
-	if err != nil {
-		return nil, fmt.Errorf("database not found: %v", err)
-	}
-
-	// Verify that the database belongs to the user
-	if database.UserId != userID {
-		return nil, fmt.Errorf("unauthorized: database does not belong to user")
-	}
-
-	// Create backup record with pending status
-	backup := &models.Backup{
-		UserId:     userID,
-		DatabaseId: databaseID,
-		Status:     "pending",
-		Filename:   s.generateBackupFilename(database),
-		Filepath:   "", // Will be set when backup is completed
-	}
-
-	if err := s.backupRepo.Create(backup); err != nil {
-		return nil, fmt.Errorf("failed to create backup record: %v", err)
-	}
-
-	// Execute backup asynchronously using worker pool
-	if s.workerPool != nil {
-		s.workerPool.Submit(func() {
-			s.executeBackupAsync(backup, database)
-		})
-	} else {
-		go s.executeBackupAsync(backup, database)
-	}
-
-	return backup, nil
 }
 
 // executeBackupAsync executes the backup process asynchronously
@@ -742,4 +710,151 @@ func (s *BackupService) DeleteBackup(id uint, userID uint) error {
 
 	// Delete record from database
 	return s.backupRepo.Delete(id)
+}
+
+// Logging methods for action history
+
+// CreateBackup creates a backup and logs the action
+func (s *BackupService) CreateBackup(databaseID uint, userID uint, ipAddress string, userAgent string) (*models.Backup, error) {
+	// Get database info with decrypted password
+	database, err := s.databaseService.GetDatabaseByID(databaseID)
+	if err != nil {
+		return nil, fmt.Errorf("database not found: %v", err)
+	}
+
+	// Verify that the database belongs to the user
+	if database.UserId != userID {
+		return nil, fmt.Errorf("unauthorized: database does not belong to user")
+	}
+
+	// Create backup record with pending status
+	backup := &models.Backup{
+		UserId:     userID,
+		DatabaseId: databaseID,
+		Status:     "pending",
+		Filename:   s.generateBackupFilename(database),
+		Filepath:   "", // Will be set when backup is completed
+		UserAgent:  userAgent,
+	}
+
+	if err := s.backupRepo.Create(backup); err != nil {
+		return nil, fmt.Errorf("failed to create backup record: %v", err)
+	}
+
+	// Execute backup asynchronously using worker pool
+	if s.workerPool != nil {
+		s.workerPool.Submit(func() {
+			s.executeBackupAsync(backup, database)
+		})
+	} else {
+		go s.executeBackupAsync(backup, database)
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"backup_id":     backup.Id,
+			"database_id":   backup.DatabaseId,
+			"database_name": database.Name,
+			"filename":      backup.Filename,
+			"size":          backup.Size,
+			"filepath":      backup.Filepath,
+		}
+		description := fmt.Sprintf("Sauvegarde '%s' créée (Base de données: %s)", backup.Filename, database.Name)
+		s.actionHistoryService.LogAction(userID, "create", "backup", backup.Id, description, metadata, ipAddress, userAgent)
+	}
+
+	return backup, nil
+}
+
+// DeleteBackupWithLogging deletes a backup and logs the action
+func (s *BackupService) DeleteBackupWithLogging(id uint, userID uint, ipAddress string, userAgent string) error {
+	backup, err := s.backupRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("sauvegarde introuvable: %v", err)
+	}
+
+	// Verify user ownership
+	if backup.UserId != userID {
+		return fmt.Errorf("accès non autorisé à cette sauvegarde")
+	}
+
+	// Get database info for logging
+	database, err := s.databaseService.GetDatabaseByID(backup.DatabaseId)
+	if err != nil {
+		return fmt.Errorf("database not found: %v", err)
+	}
+
+	// Delete from cloud storage
+	if s.cloudStorage != nil {
+		if err := s.cloudStorage.DeleteFile(backup.Filepath); err != nil {
+			fmt.Printf("[BACKUP] Warning: failed to delete from cloud storage: %v\n", err)
+			return fmt.Errorf("erreur lors de la suppression du fichier cloud: %v", err)
+		}
+	} else {
+		return fmt.Errorf("service de stockage cloud non disponible")
+	}
+
+	// Delete record from database
+	err = s.backupRepo.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		metadata := map[string]interface{}{
+			"backup_id":     backup.Id,
+			"database_id":   backup.DatabaseId,
+			"database_name": database.Name,
+			"filename":      backup.Filename,
+			"size":          backup.Size,
+			"filepath":      backup.Filepath,
+		}
+		description := fmt.Sprintf("Sauvegarde '%s' supprimée (Base de données: %s)", backup.Filename, database.Name)
+		s.actionHistoryService.LogAction(userID, "delete", "backup", backup.Id, description, metadata, ipAddress, userAgent)
+	}
+
+	return nil
+}
+
+// DownloadBackupWithLogging downloads a backup and logs the action
+func (s *BackupService) DownloadBackupWithLogging(id uint, userID uint, ipAddress string, userAgent string) ([]byte, error) {
+	data, err := s.DownloadBackup(id, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the action
+	if s.actionHistoryService != nil {
+		backup, _ := s.backupRepo.GetByID(id)
+		if backup != nil {
+			// Get database info for logging
+			database, err := s.databaseService.GetDatabaseByID(backup.DatabaseId)
+			if err != nil {
+				// If database not found, still log with available info
+				metadata := map[string]interface{}{
+					"backup_id":   backup.Id,
+					"database_id": backup.DatabaseId,
+					"filename":    backup.Filename,
+					"size":        backup.Size,
+					"filepath":    backup.Filepath,
+				}
+				s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, "Sauvegarde téléchargée", metadata, ipAddress, userAgent)
+			} else {
+				metadata := map[string]interface{}{
+					"backup_id":     backup.Id,
+					"database_id":   backup.DatabaseId,
+					"database_name": database.Name,
+					"filename":      backup.Filename,
+					"size":          backup.Size,
+					"filepath":      backup.Filepath,
+				}
+				description := fmt.Sprintf("Sauvegarde '%s' téléchargée (Base de données: %s)", backup.Filename, database.Name)
+				s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, description, metadata, ipAddress, userAgent)
+			}
+		}
+	}
+
+	return data, nil
 }

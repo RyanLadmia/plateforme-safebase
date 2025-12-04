@@ -10,6 +10,7 @@ export interface Backup {
   updated_at: string
   user_id: number
   database_id: number
+  user_agent?: string
 }
 
 export interface BackupResponse {
