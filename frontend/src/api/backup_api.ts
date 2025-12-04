@@ -30,7 +30,8 @@ export async function getBackupById(id: number): Promise<Backup> {
  * Crée une nouvelle sauvegarde pour une base de données
  */
 export async function createBackup(databaseId: number): Promise<Backup> {
-  const { data } = await apiClient.post<BackupResponse>(`/api/backups/database/${databaseId}`)
+  const userAgent = navigator.userAgent
+  const { data } = await apiClient.post<BackupResponse>(`/api/backups/database/${databaseId}`, { userAgent })
   return data.backup
 }
 

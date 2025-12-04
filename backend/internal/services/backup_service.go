@@ -734,6 +734,7 @@ func (s *BackupService) CreateBackup(databaseID uint, userID uint, ipAddress str
 		Status:     "pending",
 		Filename:   s.generateBackupFilename(database),
 		Filepath:   "", // Will be set when backup is completed
+		UserAgent:  userAgent,
 	}
 
 	if err := s.backupRepo.Create(backup); err != nil {

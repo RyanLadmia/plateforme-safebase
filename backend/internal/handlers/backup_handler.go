@@ -35,11 +35,19 @@ func (h *BackupHandler) CreateBackup(c *gin.Context) {
 		return
 	}
 
-	// Extract IP address and User-Agent for logging
-	ipAddress := c.ClientIP()
-	userAgent := c.GetHeader("User-Agent")
+	// Parse request body for userAgent
+	var requestBody struct {
+		UserAgent string `json:"userAgent"`
+	}
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		// Fallback to header if body parsing fails
+		requestBody.UserAgent = c.GetHeader("User-Agent")
+	}
 
-	backup, err := h.backupService.CreateBackup(uint(databaseID), userID.(uint), ipAddress, userAgent)
+	// Extract IP address
+	ipAddress := c.ClientIP()
+
+	backup, err := h.backupService.CreateBackup(uint(databaseID), userID.(uint), ipAddress, requestBody.UserAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création de la sauvegarde: " + err.Error()})
 		return

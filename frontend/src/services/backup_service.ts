@@ -137,6 +137,30 @@ export class BackupService {
 
     return await backupApi.restoreBackup(backup.id, backup.database_id)
   }
+
+  /**
+   * Détermine si une sauvegarde est manuelle ou automatique
+   */
+  getBackupType(backup: Backup): 'manual' | 'automatic' {
+    // Si user_agent est "Scheduled Task", c'est automatique, sinon manuel
+    return backup.user_agent === 'Scheduled Task' ? 'automatic' : 'manual'
+  }
+
+  /**
+   * Obtient le libellé du type de sauvegarde
+   */
+  getBackupTypeLabel(backup: Backup): string {
+    const type = this.getBackupType(backup)
+    return type === 'automatic' ? 'Automatique' : 'Manuelle'
+  }
+
+  /**
+   * Obtient la classe CSS pour le type de sauvegarde
+   */
+  getBackupTypeClass(backup: Backup): string {
+    const type = this.getBackupType(backup)
+    return type === 'automatic' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+  }
 }
 
 // Export d'une instance unique du service

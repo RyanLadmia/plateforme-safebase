@@ -53,6 +53,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fichier</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taille</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -69,6 +70,14 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {{ formatSize(backup.size) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span 
+                    :class="getBackupTypeClass(backup)"
+                    class="px-2 py-1 text-xs font-semibold rounded-full inline-block"
+                  >
+                    {{ getBackupTypeLabel(backup) }}
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex flex-col space-y-1">
@@ -189,6 +198,14 @@ const getStatusClass = (status: string): string => {
     'failed': 'bg-red-100 text-red-800'
   }
   return colors[status] || 'bg-gray-100 text-gray-800'
+}
+
+const getBackupTypeLabel = (backup: Backup): string => {
+  return backupService.getBackupTypeLabel(backup)
+}
+
+const getBackupTypeClass = (backup: Backup): string => {
+  return backupService.getBackupTypeClass(backup)
 }
 
 const downloadBackup = async (backup: Backup) => {
