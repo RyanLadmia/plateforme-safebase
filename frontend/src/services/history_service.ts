@@ -1,6 +1,7 @@
 // Service de gestion de l'historique des actions - Logique métier
 import * as historyApi from '@/api/history_api'
 import type { HistoryItem, HistoryResponse, ActivityType } from '@/types/history'
+import { CronUtils } from '@/utils/cron-utils'
 
 /**
  * Service de gestion de l'historique des actions
@@ -237,6 +238,63 @@ export class HistoryService {
   }
 
   /**
+   * Obtient le contenu formaté spécial pour les planifications
+   */
+  getScheduleContent(item: HistoryItem): { title: string, subtitle: string, details: string[] } {
+    const actionText = this.getActionText(item.action)
+    
+    // Récupérer les informations depuis les métadonnées
+    let databaseName = 'Inconnu'
+    let cronExpression = ''
+    
+    if (item.metadata) {
+      databaseName = item.metadata.database_name || 'Inconnu'
+      cronExpression = item.metadata.cron_expression || ''
+    }
+    
+    // Convertir l'expression cron en texte français en utilisant CronUtils
+    const scheduleText = CronUtils.getFrequencyDescription(cronExpression)
+    
+    // Construire les détails
+    const details: string[] = []
+    
+    // Toujours ajouter la base de données
+    details.push(`Base de données : ${databaseName}`)
+    
+    // Vérifier s'il y a des changements détaillés
+    if (item.metadata?.changes) {
+      const changes = item.metadata.changes as Record<string, any>
+      
+      // Traiter les changements de nom de base de données
+      if (changes.database_name) {
+        const nameChange = changes.database_name
+        if (nameChange.from && nameChange.to) {
+          details.push(`Changements : base de données de '${nameChange.from}' à '${nameChange.to}'`)
+        }
+      }
+      
+      // Traiter les changements de fréquence (expression cron)
+      if (changes.cron_expression) {
+        const cronChange = changes.cron_expression
+        if (cronChange.from && cronChange.to) {
+          const oldSchedule = CronUtils.getFrequencyDescription(cronChange.from)
+          const newSchedule = CronUtils.getFrequencyDescription(cronChange.to)
+          details.push(`Changements : fréquence de '${oldSchedule}' à '${newSchedule}'`)
+        }
+      }
+      
+      // Ici on pourrait ajouter d'autres types de changements si nécessaire
+      // (enabled/disabled, etc.)
+    }
+    
+    return {
+      title: actionText,
+      subtitle: `Planification prévue ${scheduleText}`,
+      details: details
+    }
+  }
+
+  /**
    * Obtient la classe CSS pour une action
    */
   getActionIconClass(action: string): string {
@@ -276,6 +334,13 @@ export class HistoryService {
    */
   isRestoreItem(item: HistoryItem): boolean {
     return item.resource_type === 'restore'
+  }
+
+  /**
+   * Vérifie si un élément historique concerne une planification
+   */
+  isScheduleItem(item: HistoryItem): boolean {
+    return item.resource_type === 'schedule'
   }
 }
 
