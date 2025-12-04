@@ -215,6 +215,28 @@ export class HistoryService {
   }
 
   /**
+   * Obtient le contenu formaté spécial pour les restaurations
+   */
+  getRestoreContent(item: HistoryItem): { title: string, subtitle: string, details: string[] } {
+    const actionText = this.getActionText(item.action)
+    
+    // Récupérer les informations depuis les métadonnées
+    let backupName = 'Inconnu'
+    let databaseName = 'Inconnu'
+    
+    if (item.metadata) {
+      backupName = item.metadata.backup_name || 'Inconnu'
+      databaseName = item.metadata.database_name || 'Inconnu'
+    }
+    
+    return {
+      title: actionText,
+      subtitle: `Sauvegarde utilisée : ${backupName}`,
+      details: [`Base de donnée : ${databaseName}`]
+    }
+  }
+
+  /**
    * Obtient la classe CSS pour une action
    */
   getActionIconClass(action: string): string {
@@ -247,6 +269,13 @@ export class HistoryService {
    */
   isBackupItem(item: HistoryItem): boolean {
     return item.resource_type === 'backup'
+  }
+
+  /**
+   * Vérifie si un élément historique concerne une restauration
+   */
+  isRestoreItem(item: HistoryItem): boolean {
+    return item.resource_type === 'restore'
   }
 }
 
