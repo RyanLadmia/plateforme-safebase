@@ -152,6 +152,31 @@
                     </span>
                   </div>
                 </div>
+                <!-- Affichage spécial pour les sauvegardes -->
+                <div v-else-if="isBackupItem(item)" class="space-y-1">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-gray-900">
+                      {{ getBackupContent(item).title }}
+                    </p>
+                    <p class="text-sm text-gray-500">
+                      {{ formatDate(item.created_at) }}
+                    </p>
+                  </div>
+                  <p class="text-sm text-gray-600">
+                    {{ getBackupContent(item).subtitle }}
+                  </p>
+                  <p v-for="detail in getBackupContent(item).details" :key="detail" class="text-sm text-gray-500">
+                    {{ detail }}
+                  </p>
+                  <div class="flex items-center space-x-4 mt-2">
+                    <span
+                      :class="getResourceTypeClass(item.resource_type)"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    >
+                      {{ getResourceTypeLabel(item.resource_type) }}
+                    </span>
+                  </div>
+                </div>
                 <!-- Affichage normal pour les autres types -->
                 <div v-else>
                   <div class="flex items-center justify-between">
@@ -310,8 +335,16 @@ const getDatabaseContent = (item: HistoryItem) => {
   return historyService.getDatabaseContent(item)
 }
 
+const getBackupContent = (item: HistoryItem) => {
+  return historyService.getBackupContent(item)
+}
+
 const isDatabaseItem = (item: HistoryItem): boolean => {
   return historyService.isDatabaseItem(item)
+}
+
+const isBackupItem = (item: HistoryItem): boolean => {
+  return historyService.isBackupItem(item)
 }
 
 const loadHistory = async () => {

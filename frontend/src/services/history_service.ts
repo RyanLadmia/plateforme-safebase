@@ -145,10 +145,72 @@ export class HistoryService {
                      databaseType === 'postgres' ? 'PostgreSQL' :
                      databaseType.toUpperCase()
     
+    // Construire les détails
+    const details: string[] = []
+    
+    // Toujours ajouter le type
+    details.push(`Type : ${typeLabel}`)
+    
+    // Vérifier s'il y a des changements détaillés
+    if (item.metadata?.changes) {
+      const changes = item.metadata.changes as Record<string, any>
+      
+      // Traiter les changements de nom
+      if (changes.name) {
+        const nameChange = changes.name
+        if (nameChange.from && nameChange.to) {
+          details.push(`Changements : nom de '${nameChange.from}' à '${nameChange.to}'`)
+        }
+      }
+      
+      // Ici on pourrait ajouter d'autres types de changements si nécessaire
+      // (type, host, etc.) mais pour l'instant on se limite au nom
+    }
+    
     return {
       title: actionText,
       subtitle: `Base de données : ${databaseName}`,
-      details: [`Type : ${typeLabel}`]
+      details: details
+    }
+  }
+
+  /**
+   * Obtient le contenu formaté spécial pour les sauvegardes
+   */
+  getBackupContent(item: HistoryItem): { title: string, subtitle: string, details: string[] } {
+    const actionText = this.getActionText(item.action)
+    
+    // Récupérer les informations depuis les métadonnées
+    let databaseName = 'Inconnu'
+    let fileName = 'Inconnu'
+    
+    if (item.metadata) {
+      databaseName = item.metadata.database_name || 'Inconnu'
+      // Pour les téléchargements, le nom du fichier peut être dans différents champs
+      fileName = item.metadata.file_name || item.metadata.filename || 'Inconnu'
+    }
+    
+    // Essayer d'extraire depuis la description si les métadonnées ne sont pas disponibles
+    if (fileName === 'Inconnu' && item.description) {
+      // La description contient souvent le nom du fichier entre guillemets
+      const fileMatch = item.description.match(/Sauvegarde '([^']+)'/)
+      if (fileMatch) {
+        fileName = fileMatch[1]
+      }
+    }
+    
+    if (databaseName === 'Inconnu' && item.description) {
+      // La description contient souvent le nom de la base entre parenthèses
+      const dbMatch = item.description.match(/Base de données: ([^)]+)/)
+      if (dbMatch) {
+        databaseName = dbMatch[1]
+      }
+    }
+    
+    return {
+      title: actionText,
+      subtitle: `Fichier : ${fileName}`,
+      details: [`Base de données : ${databaseName}`]
     }
   }
 
@@ -178,6 +240,13 @@ export class HistoryService {
    */
   isDatabaseItem(item: HistoryItem): boolean {
     return item.resource_type === 'database'
+  }
+
+  /**
+   * Vérifie si un élément historique concerne une sauvegarde
+   */
+  isBackupItem(item: HistoryItem): boolean {
+    return item.resource_type === 'backup'
   }
 }
 

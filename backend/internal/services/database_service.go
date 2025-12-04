@@ -88,6 +88,30 @@ func (s *DatabaseService) logDatabaseAction(userID uint, action string, database
 	}
 }
 
+// LogDatabaseNameChange logs a database name change with detailed change information
+func (s *DatabaseService) logDatabaseNameChange(userID uint, databaseID uint, oldName, newName, databaseType string, ipAddress, userAgent string) {
+	if s.actionHistoryService != nil {
+		// Create metadata with change details
+		metadata := map[string]interface{}{
+			"database_name": newName,
+			"database_type": databaseType,
+			"changes": map[string]interface{}{
+				"name": map[string]interface{}{
+					"from": oldName,
+					"to":   newName,
+				},
+			},
+		}
+
+		description := fmt.Sprintf("Base de données renommée de '%s' à '%s'", oldName, newName)
+
+		err := s.actionHistoryService.LogAction(userID, "updated", "database", databaseID, description, metadata, ipAddress, userAgent)
+		if err != nil {
+			fmt.Printf("[HISTORY] Failed to log database name change for database %d: %v\n", databaseID, err)
+		}
+	}
+}
+
 // GetDatabasesByUser returns all databases for a user (without decrypted passwords for security)
 func (s *DatabaseService) GetDatabasesByUser(userID uint) ([]models.Database, error) {
 	return s.databaseRepo.GetByUserID(userID)
@@ -185,20 +209,22 @@ func (s *DatabaseService) UpdateDatabase(database *models.Database, userID uint,
 }
 
 // UpdateDatabaseName updates only the name of a database with action logging
-func (s *DatabaseService) UpdateDatabaseName(id uint, name string, userID uint, ipAddress, userAgent string) error {
-	// Get the database to retrieve its type
+func (s *DatabaseService) UpdateDatabaseName(id uint, newName string, userID uint, ipAddress, userAgent string) error {
+	// Get the database to retrieve its current name and type
 	database, err := s.databaseRepo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("base de données introuvable: %v", err)
 	}
 
-	err = s.databaseRepo.UpdateDatabaseName(id, name)
+	oldName := database.Name
+
+	err = s.databaseRepo.UpdateDatabaseName(id, newName)
 	if err != nil {
 		return err
 	}
 
-	// Log the action
-	s.logDatabaseAction(userID, "updated", id, name, database.Type, ipAddress, userAgent)
+	// Log the action with change details
+	s.logDatabaseNameChange(userID, id, oldName, newName, database.Type, ipAddress, userAgent)
 	return nil
 }
 
