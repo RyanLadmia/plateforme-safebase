@@ -74,14 +74,14 @@ func (s *DatabaseService) CreateDatabase(database *models.Database, userID uint,
 	}
 
 	// Log the action
-	s.logDatabaseAction(userID, "created", database.Id, database.Name, ipAddress, userAgent)
+	s.logDatabaseAction(userID, "created", database.Id, database.Name, database.Type, ipAddress, userAgent)
 	return nil
 }
 
 // LogDatabaseAction logs a database action if action history service is available
-func (s *DatabaseService) logDatabaseAction(userID uint, action string, databaseID uint, databaseName string, ipAddress, userAgent string) {
+func (s *DatabaseService) logDatabaseAction(userID uint, action string, databaseID uint, databaseName string, databaseType string, ipAddress, userAgent string) {
 	if s.actionHistoryService != nil {
-		err := s.actionHistoryService.LogDatabaseAction(userID, action, databaseID, databaseName, ipAddress, userAgent)
+		err := s.actionHistoryService.LogDatabaseAction(userID, action, databaseID, databaseName, databaseType, ipAddress, userAgent)
 		if err != nil {
 			fmt.Printf("[HISTORY] Failed to log database action %s for database %d: %v\n", action, databaseID, err)
 		}
@@ -180,19 +180,25 @@ func (s *DatabaseService) UpdateDatabase(database *models.Database, userID uint,
 	}
 
 	// Log the action
-	s.logDatabaseAction(userID, "updated", database.Id, database.Name, ipAddress, userAgent)
+	s.logDatabaseAction(userID, "updated", database.Id, database.Name, database.Type, ipAddress, userAgent)
 	return nil
 }
 
 // UpdateDatabaseName updates only the name of a database with action logging
 func (s *DatabaseService) UpdateDatabaseName(id uint, name string, userID uint, ipAddress, userAgent string) error {
-	err := s.databaseRepo.UpdateDatabaseName(id, name)
+	// Get the database to retrieve its type
+	database, err := s.databaseRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("base de données introuvable: %v", err)
+	}
+
+	err = s.databaseRepo.UpdateDatabaseName(id, name)
 	if err != nil {
 		return err
 	}
 
 	// Log the action
-	s.logDatabaseAction(userID, "updated", id, name, ipAddress, userAgent)
+	s.logDatabaseAction(userID, "updated", id, name, database.Type, ipAddress, userAgent)
 	return nil
 }
 
@@ -243,7 +249,7 @@ func (s *DatabaseService) DeleteDatabase(id uint, userID uint, ipAddress, userAg
 	}
 
 	// Log the action
-	s.logDatabaseAction(userID, "deleted", id, database.Name, ipAddress, userAgent)
+	s.logDatabaseAction(userID, "deleted", id, database.Name, database.Type, ipAddress, userAgent)
 	return nil
 }
 

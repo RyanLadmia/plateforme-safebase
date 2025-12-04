@@ -105,6 +105,11 @@ export const ACTION_CONFIGS: Record<string, Record<string, ActionDescription>> =
       color: 'text-green-600',
       text: 'Restauration effectuée'
     },
+    restored: {
+      icon: 'rotate-ccw',
+      color: 'text-green-600',
+      text: 'Restauration effectuée'
+    },
     completed: {
       icon: 'check-circle',
       color: 'text-green-600',

@@ -23,7 +23,6 @@ func NewActionHistoryService(actionHistoryRepo *repositories.ActionHistoryReposi
 
 // LogAction logs a user action with metadata
 func (s *ActionHistoryService) LogAction(userID uint, action, resourceType string, resourceID uint, description string, metadata map[string]interface{}, ipAddress, userAgent string) error {
-	// Convert metadata to JSON string
 	var metadataJSON string
 	if metadata != nil {
 		jsonBytes, err := json.Marshal(metadata)
@@ -50,13 +49,56 @@ func (s *ActionHistoryService) LogAction(userID uint, action, resourceType strin
 	return s.actionHistoryRepo.Create(actionHistory)
 }
 
+// ActionHistoryResponse represents the response format for action history
+type ActionHistoryResponse struct {
+	Id           uint                   `json:"id"`
+	UserId       uint                   `json:"user_id"`
+	User         *models.User           `json:"user,omitempty"`
+	Action       string                 `json:"action"`
+	ResourceType string                 `json:"resource_type"`
+	ResourceId   uint                   `json:"resource_id"`
+	Description  string                 `json:"description"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	IpAddress    string                 `json:"ip_address,omitempty"`
+	UserAgent    string                 `json:"user_agent,omitempty"`
+	CreatedAt    time.Time              `json:"created_at"`
+}
+
+// convertToResponse converts ActionHistory model to response format
+func (s *ActionHistoryService) convertToResponse(history models.ActionHistory) ActionHistoryResponse {
+	response := ActionHistoryResponse{
+		Id:           history.Id,
+		UserId:       history.UserId,
+		User:         &history.User,
+		Action:       history.Action,
+		ResourceType: history.ResourceType,
+		ResourceId:   history.ResourceId,
+		Description:  history.Description,
+		IpAddress:    history.IpAddress,
+		UserAgent:    history.UserAgent,
+		CreatedAt:    history.CreatedAt,
+	}
+
+	// Parse metadata JSON string to map
+	if history.Metadata != "" {
+		var metadata map[string]interface{}
+		if err := json.Unmarshal([]byte(history.Metadata), &metadata); err != nil {
+			fmt.Printf("Error parsing metadata JSON for history ID %d: %v\n", history.Id, err)
+		} else {
+			response.Metadata = metadata
+		}
+	}
+
+	return response
+}
+
 // GetUserActionHistory gets action history for a user with pagination
-func (s *ActionHistoryService) GetUserActionHistory(userID uint, page, limit int) ([]models.ActionHistory, int64, error) {
+func (s *ActionHistoryService) GetUserActionHistory(userID uint, page, limit int) ([]ActionHistoryResponse, int64, error) {
 	if page < 1 {
 		page = 1
 	}
 	if limit < 1 || limit > 100 {
-		limit = 20 // Default limit
+		limit = 20
 	}
 
 	offset := (page - 1) * limit
@@ -71,16 +113,33 @@ func (s *ActionHistoryService) GetUserActionHistory(userID uint, page, limit int
 		return nil, 0, err
 	}
 
-	return histories, total, nil
+	// Convert to response format
+	responses := make([]ActionHistoryResponse, len(histories))
+	for i, history := range histories {
+		responses[i] = s.convertToResponse(history)
+	}
+
+	return responses, total, nil
 }
 
 // GetResourceActionHistory gets action history for a specific resource
-func (s *ActionHistoryService) GetResourceActionHistory(resourceType string, resourceID uint) ([]models.ActionHistory, error) {
-	return s.actionHistoryRepo.GetByResource(resourceType, resourceID)
+func (s *ActionHistoryService) GetResourceActionHistory(resourceType string, resourceID uint) ([]ActionHistoryResponse, error) {
+	histories, err := s.actionHistoryRepo.GetByResource(resourceType, resourceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to response format
+	responses := make([]ActionHistoryResponse, len(histories))
+	for i, history := range histories {
+		responses[i] = s.convertToResponse(history)
+	}
+
+	return responses, nil
 }
 
 // GetActionHistoryByType gets action history for a resource type with pagination
-func (s *ActionHistoryService) GetActionHistoryByType(resourceType string, page, limit int) ([]models.ActionHistory, int64, error) {
+func (s *ActionHistoryService) GetActionHistoryByType(resourceType string, page, limit int) ([]ActionHistoryResponse, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -100,11 +159,17 @@ func (s *ActionHistoryService) GetActionHistoryByType(resourceType string, page,
 		return nil, 0, err
 	}
 
-	return histories, total, nil
+	// Convert to response format
+	responses := make([]ActionHistoryResponse, len(histories))
+	for i, history := range histories {
+		responses[i] = s.convertToResponse(history)
+	}
+
+	return responses, total, nil
 }
 
 // GetRecentActionHistory gets recent action history with pagination
-func (s *ActionHistoryService) GetRecentActionHistory(page, limit int) ([]models.ActionHistory, int64, error) {
+func (s *ActionHistoryService) GetRecentActionHistory(page, limit int) ([]ActionHistoryResponse, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -124,16 +189,23 @@ func (s *ActionHistoryService) GetRecentActionHistory(page, limit int) ([]models
 		return nil, 0, err
 	}
 
-	return histories, total, nil
+	// Convert to response format
+	responses := make([]ActionHistoryResponse, len(histories))
+	for i, history := range histories {
+		responses[i] = s.convertToResponse(history)
+	}
+
+	return responses, total, nil
 }
 
 // Helper methods for common actions
 
 // LogDatabaseAction logs database-related actions
-func (s *ActionHistoryService) LogDatabaseAction(userID uint, action string, databaseID uint, databaseName string, ipAddress, userAgent string) error {
+func (s *ActionHistoryService) LogDatabaseAction(userID uint, action string, databaseID uint, databaseName string, databaseType string, ipAddress, userAgent string) error {
 	description := fmt.Sprintf("Base de données '%s' %s", databaseName, s.getActionDescription(action))
 	metadata := map[string]interface{}{
 		"database_name": databaseName,
+		"database_type": databaseType,
 	}
 
 	return s.LogAction(userID, action, "database", databaseID, description, metadata, ipAddress, userAgent)

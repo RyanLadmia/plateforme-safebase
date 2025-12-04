@@ -98,7 +98,7 @@
                   :class="getActionIconClass(item)"
                   class="w-10 h-10 rounded-full flex items-center justify-center"
                 >
-                  <svg v-if="item.action === 'created' || item.action === 'create'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg v-if="item.action === 'created' || item.action === 'create' || item.action === 'restored'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                   <svg v-else-if="item.action === 'updated' || item.action === 'update'" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,27 +127,55 @@
 
               <!-- Content -->
               <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between">
-                  <p class="text-sm font-medium text-gray-900">
-                    {{ getActionText(item) }}
+                <!-- Affichage spécial pour les bases de données -->
+                <div v-if="isDatabaseItem(item)" class="space-y-1">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-gray-900">
+                      {{ getDatabaseContent(item).title }}
+                    </p>
+                    <p class="text-sm text-gray-500">
+                      {{ formatDate(item.created_at) }}
+                    </p>
+                  </div>
+                  <p class="text-sm text-gray-600">
+                    {{ getDatabaseContent(item).subtitle }}
                   </p>
-                  <p class="text-sm text-gray-500">
-                    {{ formatDate(item.created_at) }}
+                  <p v-for="detail in getDatabaseContent(item).details" :key="detail" class="text-sm text-gray-500">
+                    {{ detail }}
                   </p>
+                  <div class="flex items-center space-x-4 mt-2">
+                    <span
+                      :class="getResourceTypeClass(item.resource_type)"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    >
+                      {{ getResourceTypeLabel(item.resource_type) }}
+                    </span>
+                  </div>
                 </div>
-                <p class="text-sm text-gray-600 mt-1">
-                  {{ item.description }}
-                </p>
-                <div class="flex items-center space-x-4 mt-2">
-                  <span
-                    :class="getResourceTypeClass(item.resource_type)"
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  >
-                    {{ getResourceTypeLabel(item.resource_type) }}
-                  </span>
-                  <span class="text-xs text-gray-500">
-                    ID: {{ item.resource_id }}
-                  </span>
+                <!-- Affichage normal pour les autres types -->
+                <div v-else>
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-gray-900">
+                      {{ getActionText(item) }}
+                    </p>
+                    <p class="text-sm text-gray-500">
+                      {{ formatDate(item.created_at) }}
+                    </p>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-1">
+                    {{ item.description }}
+                  </p>
+                  <div class="flex items-center space-x-4 mt-2">
+                    <span
+                      :class="getResourceTypeClass(item.resource_type)"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    >
+                      {{ getResourceTypeLabel(item.resource_type) }}
+                    </span>
+                    <span class="text-xs text-gray-500">
+                      ID: {{ item.resource_id }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -276,6 +304,14 @@ const getResourceTypeLabel = (type: string): string => {
 
 const getResourceTypeClass = (type: string): string => {
   return historyService.getResourceTypeClass(type)
+}
+
+const getDatabaseContent = (item: HistoryItem) => {
+  return historyService.getDatabaseContent(item)
+}
+
+const isDatabaseItem = (item: HistoryItem): boolean => {
+  return historyService.isDatabaseItem(item)
 }
 
 const loadHistory = async () => {

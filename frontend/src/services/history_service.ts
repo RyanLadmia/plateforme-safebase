@@ -116,6 +116,43 @@ export class HistoryService {
   }
 
   /**
+   * Obtient le contenu formaté spécial pour les bases de données
+   */
+  getDatabaseContent(item: HistoryItem): { title: string, subtitle: string, details: string[] } {
+    const actionText = this.getActionText(item.action)
+    
+    // Récupérer les informations depuis les métadonnées
+    let databaseName = 'Inconnu'
+    let databaseType = 'Inconnu'
+    
+    if (item.metadata) {
+      databaseName = item.metadata.database_name || item.metadata.name || 'Inconnu'
+      databaseType = item.metadata.database_type || item.metadata.type || 'Inconnu'
+    }
+    
+    // Essayer d'extraire depuis la description si les métadonnées ne sont pas disponibles
+    if (databaseName === 'Inconnu' && item.description) {
+      // La description contient souvent le nom de la base
+      const match = item.description.match(/Base de données '([^']+)'/)
+      if (match) {
+        databaseName = match[1]
+      }
+    }
+    
+    // Formater le type
+    const typeLabel = databaseType === 'postgresql' ? 'PostgreSQL' : 
+                     databaseType === 'mysql' ? 'MySQL' : 
+                     databaseType === 'postgres' ? 'PostgreSQL' :
+                     databaseType.toUpperCase()
+    
+    return {
+      title: actionText,
+      subtitle: `Base de données : ${databaseName}`,
+      details: [`Type : ${typeLabel}`]
+    }
+  }
+
+  /**
    * Obtient la classe CSS pour une action
    */
   getActionIconClass(action: string): string {
@@ -130,10 +167,17 @@ export class HistoryService {
       failed: 'bg-red-500',
       executed: 'bg-blue-500',
       download: 'bg-purple-500',
-      restored: 'bg-indigo-500'
+      restored: 'bg-green-500'
     }
 
     return colorClasses[action] || 'bg-gray-500'
+  }
+
+  /**
+   * Vérifie si un élément historique concerne une base de données
+   */
+  isDatabaseItem(item: HistoryItem): boolean {
+    return item.resource_type === 'database'
   }
 }
 
