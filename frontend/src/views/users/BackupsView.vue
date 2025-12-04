@@ -39,6 +39,26 @@
         </div>
       </div>
 
+      <!-- Statistics -->
+      <div class="my-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">Taille totale</p>
+          <p class="text-2xl font-bold text-gray-900">{{ formatTotalSize() }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">Sauvegardes réussies</p>
+          <p class="text-2xl font-bold text-green-600">{{ completedBackups.length }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">En cours</p>
+          <p class="text-2xl font-bold text-orange-600">{{ pendingBackups.length }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500 text-sm">Échouées</p>
+          <p class="text-2xl font-bold text-red-600">{{ failedBackups.length }}</p>
+        </div>
+      </div>
+
       <!-- Backups List -->
       <div v-if="loading" class="text-center py-12">Chargement...</div>
       <div v-else-if="error" class="bg-red-100 text-red-700 p-4 rounded-lg">{{ error }}</div>
@@ -125,26 +145,6 @@
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- Statistics -->
-      <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg shadow p-4">
-          <p class="text-gray-500 text-sm">Taille totale</p>
-          <p class="text-2xl font-bold text-gray-900">{{ formatTotalSize() }}</p>
-        </div>
-        <div class="bg-white rounded-lg shadow p-4">
-          <p class="text-gray-500 text-sm">Sauvegardes réussies</p>
-          <p class="text-2xl font-bold text-green-600">{{ completedBackups.length }}</p>
-        </div>
-        <div class="bg-white rounded-lg shadow p-4">
-          <p class="text-gray-500 text-sm">En cours</p>
-          <p class="text-2xl font-bold text-orange-600">{{ pendingBackups.length }}</p>
-        </div>
-        <div class="bg-white rounded-lg shadow p-4">
-          <p class="text-gray-500 text-sm">Échouées</p>
-          <p class="text-2xl font-bold text-red-600">{{ failedBackups.length }}</p>
         </div>
       </div>
     </div>
