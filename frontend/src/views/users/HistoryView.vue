@@ -162,8 +162,7 @@
                       {{ formatDate(item.created_at) }}
                     </p>
                   </div>
-                  <p class="text-sm text-gray-600">
-                    {{ getBackupContent(item).subtitle }}
+                  <p class="text-sm text-gray-600" v-html="getBackupContent(item).subtitle">
                   </p>
                   <p v-for="detail in getBackupContent(item).details" :key="detail" class="text-sm text-gray-500">
                     {{ detail }}

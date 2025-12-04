@@ -80,6 +80,13 @@ func (h *ActionHistoryHandler) GetActionHistoryByType(c *gin.Context) {
 		return
 	}
 
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilisateur non authentifié"})
+		return
+	}
+
 	// Parse pagination parameters
 	page := 1
 	limit := 20
@@ -96,8 +103,8 @@ func (h *ActionHistoryHandler) GetActionHistoryByType(c *gin.Context) {
 		}
 	}
 
-	// Get action history by type
-	histories, total, err := h.actionHistoryService.GetActionHistoryByType(resourceType, page, limit)
+	// Get action history by type for the authenticated user
+	histories, total, err := h.actionHistoryService.GetUserActionHistoryByType(userID.(uint), resourceType, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la récupération de l'historique: " + err.Error()})
 		return

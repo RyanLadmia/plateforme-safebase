@@ -23,6 +23,7 @@ func NewScheduleHandler(scheduleService *services.ScheduleService) *ScheduleHand
 func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 	var request struct {
 		DatabaseID     uint   `json:"database_id" binding:"required"`
+		Name           string `json:"name" binding:"required"`
 		CronExpression string `json:"cron_expression" binding:"required"`
 	}
 
@@ -41,7 +42,7 @@ func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	schedule, err := h.scheduleService.CreateSchedule(request.DatabaseID, userID.(uint), request.CronExpression, ipAddress, userAgent)
+	schedule, err := h.scheduleService.CreateSchedule(request.DatabaseID, userID.(uint), request.Name, request.CronExpression, ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création du schedule: " + err.Error()})
 		return
@@ -108,6 +109,7 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 	}
 
 	var request struct {
+		Name           *string `json:"name"`
 		CronExpression *string `json:"cron_expression"`
 		Active         *bool   `json:"active"`
 	}
@@ -127,16 +129,20 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
+	name := ""
+	if request.Name != nil {
+		name = *request.Name
+	}
 	cronExpr := ""
 	if request.CronExpression != nil {
 		cronExpr = *request.CronExpression
 	}
-	active := true
+	var activePtr *bool
 	if request.Active != nil {
-		active = *request.Active
+		activePtr = request.Active
 	}
 
-	schedule, err := h.scheduleService.UpdateSchedule(uint(id), userID.(uint), cronExpr, active, ipAddress, userAgent)
+	schedule, err := h.scheduleService.UpdateSchedule(uint(id), userID.(uint), name, cronExpr, activePtr, ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la mise à jour du schedule: " + err.Error()})
 		return

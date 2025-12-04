@@ -22,7 +22,7 @@
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-2">
                 <h3 class="text-lg font-semibold text-gray-900">
-                  {{ schedule.database?.name || 'Base inconnue' }}
+                  {{ schedule.name }}
                 </h3>
                 <span
                   :class="schedule.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
@@ -31,6 +31,9 @@
                   {{ schedule.active ? 'Actif' : 'Inactif' }}
                 </span>
               </div>
+              <p class="text-sm text-gray-600 mb-2">
+                Base de données : {{ schedule.database?.name || 'Base inconnue' }}
+              </p>
               <span class="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
                 {{ schedule.database?.type || 'N/A' }}
               </span>
@@ -93,6 +96,20 @@
                 {{ db.name }} ({{ db.type }})
               </option>
             </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2">Nom de la planification</label>
+            <input
+              v-model="form.name"
+              type="text"
+              required
+              placeholder="Ex: Sauvegarde quotidienne production"
+              class="w-full px-4 py-2 border rounded-lg"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Donnez un nom descriptif à votre planification
+            </p>
           </div>
 
           <div>
@@ -180,6 +197,7 @@ const cronPresets = ref<CronPreset[]>(CRON_PRESETS)
 
 const form = ref<ScheduleCreateRequest & { active?: boolean }>({
   database_id: 0,
+  name: '',
   cron_expression: '',
   active: true
 })
@@ -194,13 +212,14 @@ const closeModal = () => {
   showCreateModal.value = false
   showEditModal.value = false
   editingSchedule.value = null
-  form.value = { database_id: 0, cron_expression: '', active: true }
+  form.value = { database_id: 0, name: '', cron_expression: '', active: true }
 }
 
 const createSchedule = async () => {
   try {
     const newSchedule = await scheduleService.createSchedule({
       database_id: form.value.database_id,
+      name: form.value.name,
       cron_expression: form.value.cron_expression
     })
     safebaseStore.addSchedule(newSchedule)
@@ -214,6 +233,7 @@ const editSchedule = (schedule: Schedule) => {
   editingSchedule.value = schedule
   form.value = {
     database_id: schedule.database_id,
+    name: schedule.name,
     cron_expression: schedule.cron_expression,
     active: schedule.active
   }
@@ -225,6 +245,9 @@ const updateSchedule = async () => {
 
   try {
     const updateData: ScheduleUpdateRequest = {}
+    if (form.value.name !== editingSchedule.value.name) {
+      updateData.name = form.value.name
+    }
     if (form.value.cron_expression !== editingSchedule.value.cron_expression) {
       updateData.cron_expression = form.value.cron_expression
     }

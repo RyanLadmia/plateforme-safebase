@@ -168,6 +168,36 @@ func (s *ActionHistoryService) GetActionHistoryByType(resourceType string, page,
 	return responses, total, nil
 }
 
+// GetUserActionHistoryByType gets action history for a user and resource type with pagination
+func (s *ActionHistoryService) GetUserActionHistoryByType(userID uint, resourceType string, page, limit int) ([]ActionHistoryResponse, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	offset := (page - 1) * limit
+
+	histories, err := s.actionHistoryRepo.GetByUserIDAndResourceType(userID, resourceType, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := s.actionHistoryRepo.GetByUserIDAndResourceTypeCount(userID, resourceType)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Convert to response format
+	responses := make([]ActionHistoryResponse, len(histories))
+	for i, history := range histories {
+		responses[i] = s.convertToResponse(history)
+	}
+
+	return responses, total, nil
+}
+
 // GetRecentActionHistory gets recent action history with pagination
 func (s *ActionHistoryService) GetRecentActionHistory(page, limit int) ([]ActionHistoryResponse, int64, error) {
 	if page < 1 {

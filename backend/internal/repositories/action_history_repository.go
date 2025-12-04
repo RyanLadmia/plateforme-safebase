@@ -82,6 +82,27 @@ func (r *ActionHistoryRepository) GetByResourceTypeCount(resourceType string) (i
 	return count, err
 }
 
+// GetByUserIDAndResourceType gets action history for a user and resource type with pagination
+func (r *ActionHistoryRepository) GetByUserIDAndResourceType(userID uint, resourceType string, limit int, offset int) ([]models.ActionHistory, error) {
+	var actionHistories []models.ActionHistory
+	err := r.db.Preload("User").
+		Where("user_id = ? AND resource_type = ?", userID, resourceType).
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&actionHistories).Error
+	return actionHistories, err
+}
+
+// GetByUserIDAndResourceTypeCount gets the total count of action history records for a user and resource type
+func (r *ActionHistoryRepository) GetByUserIDAndResourceTypeCount(userID uint, resourceType string) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.ActionHistory{}).
+		Where("user_id = ? AND resource_type = ?", userID, resourceType).
+		Count(&count).Error
+	return count, err
+}
+
 // GetRecent gets recent action history records with pagination
 func (r *ActionHistoryRepository) GetRecent(limit int, offset int) ([]models.ActionHistory, error) {
 	var actionHistories []models.ActionHistory

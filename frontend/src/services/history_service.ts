@@ -208,9 +208,13 @@ export class HistoryService {
       }
     }
     
+    // Déterminer si c'est une sauvegarde manuelle ou automatique
+    const isAutomatic = item.user_agent === 'Scheduled Task'
+    const backupType = isAutomatic ? 'Sauvegarde automatique' : 'Sauvegarde manuelle'
+    
     return {
       title: actionText,
-      subtitle: `Fichier : ${fileName}`,
+      subtitle: `${backupType}<br>Fichier : ${fileName}`,
       details: [`Base de données : ${databaseName}`]
     }
   }
@@ -245,11 +249,13 @@ export class HistoryService {
     const isUpdate = item.action === 'update' || item.action === 'updated'
 
     // Récupérer les informations depuis les métadonnées
+    let scheduleName = 'Inconnu'
     let databaseName = 'Inconnu'
     let cronExpression = ''
     let isEnabled = true
 
     if (item.metadata) {
+      scheduleName = item.metadata.schedule_name || item.metadata.name || 'Inconnu'
       databaseName = item.metadata.database_name || 'Inconnu'
       cronExpression = item.metadata.cron_expression || ''
       isEnabled = item.metadata.enabled !== undefined ? item.metadata.enabled : true
@@ -283,11 +289,11 @@ export class HistoryService {
         }
       }
 
-      // Traiter les changements de nom de base de données
-      if (changes.database_name) {
-        const nameChange = changes.database_name
+      // Traiter les changements de nom de planification
+      if (changes.name) {
+        const nameChange = changes.name
         if (nameChange.from && nameChange.to) {
-          changeMessages.push(`base de données '${nameChange.from}' à '${nameChange.to}'`)
+          changeMessages.push(`nom '${nameChange.from}' à '${nameChange.to}'`)
         }
       }
 
@@ -295,8 +301,8 @@ export class HistoryService {
       if (changeMessages.length > 0) {
         return {
           title: actionText,
-          subtitle: `Changement : ${changeMessages.join(', ')}`,
-          details: [`Base de données : ${databaseName}`]
+          subtitle: `Planification : ${scheduleName}`,
+          details: [`Changement : ${changeMessages.join(', ')}`, `Base de données : ${databaseName}`]
         }
       }
     }
@@ -305,12 +311,10 @@ export class HistoryService {
     const scheduleText = CronUtils.getFrequencyDescription(cronExpression)
     const statusText = isEnabled ? '' : ' (désactivée)'
 
-    details.push(`Base de données : ${databaseName}`)
-
     return {
       title: actionText,
-      subtitle: `Planification prévue ${scheduleText}${statusText}`,
-      details: details
+      subtitle: `Planification : ${scheduleName}`,
+      details: [`Planification prévue ${scheduleText}${statusText}`, `Base de données : ${databaseName}`]
     }
   }
 

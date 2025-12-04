@@ -89,7 +89,7 @@ func (s *ScheduleService) LoadActiveSchedules() error {
 // Logging methods for action history
 
 // CreateSchedule creates a new schedule and logs the action
-func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpression string, ipAddress string, userAgent string) (*models.Schedule, error) {
+func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, name string, cronExpression string, ipAddress string, userAgent string) (*models.Schedule, error) {
 	// Verify that the database exists and belongs to the user
 	db, err := s.databaseRepo.GetByID(databaseID)
 	if err != nil {
@@ -106,6 +106,7 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpre
 
 	// Create the schedule record
 	schedule := &models.Schedule{
+		Name:           name,
 		CronExpression: cronExpression,
 		Active:         true,
 		UserId:         userID,
@@ -143,6 +144,7 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpre
 			"schedule_id":     schedule.Id,
 			"database_id":     schedule.DatabaseId,
 			"database_name":   db.Name,
+			"schedule_name":   schedule.Name,
 			"cron_expression": schedule.CronExpression,
 			"active":          schedule.Active,
 		}
@@ -154,7 +156,7 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpre
 }
 
 // UpdateSchedule updates a schedule and logs the action
-func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression string, active bool, ipAddress string, userAgent string) (*models.Schedule, error) {
+func (s *ScheduleService) UpdateSchedule(id uint, userID uint, name string, cronExpression string, active *bool, ipAddress string, userAgent string) (*models.Schedule, error) {
 	schedule, err := s.scheduleRepo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -164,8 +166,14 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 	}
 
 	// Capture l'état avant modification pour les changements
+	oldName := schedule.Name
 	oldCronExpression := schedule.CronExpression
 	oldActive := schedule.Active
+
+	// Validate and update name if provided
+	if name != "" {
+		schedule.Name = name
+	}
 
 	// Validate cron expression if provided
 	if cronExpression != "" {
@@ -174,7 +182,11 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 		}
 		schedule.CronExpression = cronExpression
 	}
-	schedule.Active = active
+
+	// Update active status only if explicitly provided
+	if active != nil {
+		schedule.Active = *active
+	}
 
 	// Remove old job if exists
 	if entryID, exists := s.jobs[schedule.Id]; exists {
@@ -182,8 +194,13 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 		delete(s.jobs, schedule.Id)
 	}
 
-	// Add new job if active
-	if active {
+	// Add new job if active (either explicitly set to true, or not changed and was already active)
+	jobShouldBeActive := schedule.Active
+	if active != nil {
+		jobShouldBeActive = *active
+	}
+
+	if jobShouldBeActive {
 		db, err := s.databaseRepo.GetByID(schedule.DatabaseId)
 		if err != nil {
 			return nil, fmt.Errorf("base de données introuvable: %v", err)
@@ -214,9 +231,11 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 			metadata := map[string]interface{}{
 				"schedule_id":     schedule.Id,
 				"database_id":     schedule.DatabaseId,
+				"database_name":   db.Name,
+				"schedule_name":   schedule.Name,
 				"cron_expression": schedule.CronExpression,
 				"active":          schedule.Active,
-				"changes":         s.buildScheduleChanges(oldCronExpression, oldActive, schedule.CronExpression, schedule.Active),
+				"changes":         s.buildScheduleChanges(oldName, oldCronExpression, oldActive, schedule.Name, schedule.CronExpression, schedule.Active),
 			}
 			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
 		} else {
@@ -224,9 +243,10 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 				"schedule_id":     schedule.Id,
 				"database_id":     schedule.DatabaseId,
 				"database_name":   db.Name,
+				"schedule_name":   schedule.Name,
 				"cron_expression": schedule.CronExpression,
 				"active":          schedule.Active,
-				"changes":         s.buildScheduleChanges(oldCronExpression, oldActive, schedule.CronExpression, schedule.Active),
+				"changes":         s.buildScheduleChanges(oldName, oldCronExpression, oldActive, schedule.Name, schedule.CronExpression, schedule.Active),
 			}
 			description := fmt.Sprintf("Planification modifiée pour la base de données '%s'", db.Name)
 			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
@@ -237,8 +257,16 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 }
 
 // buildScheduleChanges builds the changes metadata for schedule updates
-func (s *ScheduleService) buildScheduleChanges(oldCronExpression string, oldActive bool, newCronExpression string, newActive bool) map[string]interface{} {
+func (s *ScheduleService) buildScheduleChanges(oldName string, oldCronExpression string, oldActive bool, newName string, newCronExpression string, newActive bool) map[string]interface{} {
 	changes := make(map[string]interface{})
+
+	// Check if name changed
+	if oldName != newName {
+		changes["name"] = map[string]interface{}{
+			"from": oldName,
+			"to":   newName,
+		}
+	}
 
 	// Check if cron expression changed
 	if oldCronExpression != newCronExpression {
@@ -299,6 +327,7 @@ func (s *ScheduleService) DeleteSchedule(id uint, userID uint, ipAddress string,
 			"schedule_id":     schedule.Id,
 			"database_id":     schedule.DatabaseId,
 			"database_name":   db.Name,
+			"schedule_name":   schedule.Name,
 			"cron_expression": schedule.CronExpression,
 			"active":          schedule.Active,
 		}
