@@ -50,7 +50,7 @@ func (s *BackupService) SetActionHistoryService(actionHistoryService *ActionHist
 
 // generateBackupFilename generates a consistent filename for backups
 func (s *BackupService) generateBackupFilename(database *models.Database) string {
-	timestamp := time.Now().Format("20060102_150405")
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	return fmt.Sprintf("%s_%s_%s.zip", database.Name, database.Type, timestamp)
 }
 
@@ -752,13 +752,15 @@ func (s *BackupService) CreateBackup(databaseID uint, userID uint, ipAddress str
 	// Log the action
 	if s.actionHistoryService != nil {
 		metadata := map[string]interface{}{
-			"backup_id":   backup.Id,
-			"database_id": backup.DatabaseId,
-			"filename":    backup.Filename,
-			"size":        backup.Size,
-			"filepath":    backup.Filepath,
+			"backup_id":     backup.Id,
+			"database_id":   backup.DatabaseId,
+			"database_name": database.Name,
+			"filename":      backup.Filename,
+			"size":          backup.Size,
+			"filepath":      backup.Filepath,
 		}
-		s.actionHistoryService.LogAction(userID, "create", "backup", backup.Id, "Sauvegarde créée", metadata, ipAddress, userAgent)
+		description := fmt.Sprintf("Sauvegarde '%s' créée (Base de données: %s)", backup.Filename, database.Name)
+		s.actionHistoryService.LogAction(userID, "create", "backup", backup.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return backup, nil
@@ -774,6 +776,12 @@ func (s *BackupService) DeleteBackupWithLogging(id uint, userID uint, ipAddress 
 	// Verify user ownership
 	if backup.UserId != userID {
 		return fmt.Errorf("accès non autorisé à cette sauvegarde")
+	}
+
+	// Get database info for logging
+	database, err := s.databaseService.GetDatabaseByID(backup.DatabaseId)
+	if err != nil {
+		return fmt.Errorf("database not found: %v", err)
 	}
 
 	// Delete from cloud storage
@@ -795,13 +803,15 @@ func (s *BackupService) DeleteBackupWithLogging(id uint, userID uint, ipAddress 
 	// Log the action
 	if s.actionHistoryService != nil {
 		metadata := map[string]interface{}{
-			"backup_id":   backup.Id,
-			"database_id": backup.DatabaseId,
-			"filename":    backup.Filename,
-			"size":        backup.Size,
-			"filepath":    backup.Filepath,
+			"backup_id":     backup.Id,
+			"database_id":   backup.DatabaseId,
+			"database_name": database.Name,
+			"filename":      backup.Filename,
+			"size":          backup.Size,
+			"filepath":      backup.Filepath,
 		}
-		s.actionHistoryService.LogAction(userID, "delete", "backup", backup.Id, "Sauvegarde supprimée", metadata, ipAddress, userAgent)
+		description := fmt.Sprintf("Sauvegarde '%s' supprimée (Base de données: %s)", backup.Filename, database.Name)
+		s.actionHistoryService.LogAction(userID, "delete", "backup", backup.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return nil
@@ -818,14 +828,30 @@ func (s *BackupService) DownloadBackupWithLogging(id uint, userID uint, ipAddres
 	if s.actionHistoryService != nil {
 		backup, _ := s.backupRepo.GetByID(id)
 		if backup != nil {
-			metadata := map[string]interface{}{
-				"backup_id":   backup.Id,
-				"database_id": backup.DatabaseId,
-				"filename":    backup.Filename,
-				"size":        backup.Size,
-				"filepath":    backup.Filepath,
+			// Get database info for logging
+			database, err := s.databaseService.GetDatabaseByID(backup.DatabaseId)
+			if err != nil {
+				// If database not found, still log with available info
+				metadata := map[string]interface{}{
+					"backup_id":   backup.Id,
+					"database_id": backup.DatabaseId,
+					"filename":    backup.Filename,
+					"size":        backup.Size,
+					"filepath":    backup.Filepath,
+				}
+				s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, "Sauvegarde téléchargée", metadata, ipAddress, userAgent)
+			} else {
+				metadata := map[string]interface{}{
+					"backup_id":     backup.Id,
+					"database_id":   backup.DatabaseId,
+					"database_name": database.Name,
+					"filename":      backup.Filename,
+					"size":          backup.Size,
+					"filepath":      backup.Filepath,
+				}
+				description := fmt.Sprintf("Sauvegarde '%s' téléchargée (Base de données: %s)", backup.Filename, database.Name)
+				s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, description, metadata, ipAddress, userAgent)
 			}
-			s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, "Sauvegarde téléchargée", metadata, ipAddress, userAgent)
 		}
 	}
 

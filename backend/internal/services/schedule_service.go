@@ -142,10 +142,12 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, cronExpre
 		metadata := map[string]interface{}{
 			"schedule_id":     schedule.Id,
 			"database_id":     schedule.DatabaseId,
+			"database_name":   db.Name,
 			"cron_expression": schedule.CronExpression,
 			"active":          schedule.Active,
 		}
-		s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, "Planification créée", metadata, ipAddress, userAgent)
+		description := fmt.Sprintf("Planification créée pour la base de données '%s' (%s)", db.Name, schedule.CronExpression)
+		s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return schedule, nil
@@ -202,13 +204,27 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 
 	// Log the action
 	if s.actionHistoryService != nil {
-		metadata := map[string]interface{}{
-			"schedule_id":     schedule.Id,
-			"database_id":     schedule.DatabaseId,
-			"cron_expression": schedule.CronExpression,
-			"active":          schedule.Active,
+		db, err := s.databaseRepo.GetByID(schedule.DatabaseId)
+		if err != nil {
+			// If database not found, log with available info
+			metadata := map[string]interface{}{
+				"schedule_id":     schedule.Id,
+				"database_id":     schedule.DatabaseId,
+				"cron_expression": schedule.CronExpression,
+				"active":          schedule.Active,
+			}
+			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
+		} else {
+			metadata := map[string]interface{}{
+				"schedule_id":     schedule.Id,
+				"database_id":     schedule.DatabaseId,
+				"database_name":   db.Name,
+				"cron_expression": schedule.CronExpression,
+				"active":          schedule.Active,
+			}
+			description := fmt.Sprintf("Planification modifiée pour la base de données '%s' (%s)", db.Name, schedule.CronExpression)
+			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 		}
-		s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
 	}
 
 	return schedule, nil
@@ -224,6 +240,12 @@ func (s *ScheduleService) DeleteSchedule(id uint, userID uint, ipAddress string,
 	// Verify user ownership
 	if schedule.UserId != userID {
 		return fmt.Errorf("accès non autorisé")
+	}
+
+	// Get database info for logging
+	db, err := s.databaseRepo.GetByID(schedule.DatabaseId)
+	if err != nil {
+		return fmt.Errorf("base de données introuvable: %v", err)
 	}
 
 	// Remove from cron if exists
@@ -242,10 +264,12 @@ func (s *ScheduleService) DeleteSchedule(id uint, userID uint, ipAddress string,
 		metadata := map[string]interface{}{
 			"schedule_id":     schedule.Id,
 			"database_id":     schedule.DatabaseId,
+			"database_name":   db.Name,
 			"cron_expression": schedule.CronExpression,
 			"active":          schedule.Active,
 		}
-		s.actionHistoryService.LogAction(userID, "delete", "schedule", schedule.Id, "Planification supprimée", metadata, ipAddress, userAgent)
+		description := fmt.Sprintf("Planification supprimée pour la base de données '%s' (%s)", db.Name, schedule.CronExpression)
+		s.actionHistoryService.LogAction(userID, "delete", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return nil

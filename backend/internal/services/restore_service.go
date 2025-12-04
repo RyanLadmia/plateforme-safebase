@@ -327,12 +327,15 @@ func (s *RestoreService) CreateRestore(backupID uint, databaseID uint, userID ui
 	// Log the action
 	if s.actionHistoryService != nil {
 		metadata := map[string]interface{}{
-			"restore_id":  restore.Id,
-			"backup_id":   restore.BackupId,
-			"database_id": restore.DatabaseId,
-			"status":      restore.Status,
+			"restore_id":     restore.Id,
+			"backup_id":      restore.BackupId,
+			"backup_name":    backup.Filename,
+			"database_id":    restore.DatabaseId,
+			"database_name":  database.Name,
+			"status":         restore.Status,
 		}
-		s.actionHistoryService.LogAction(userID, "create", "restore", restore.Id, "Restauration effectuée", metadata, ipAddress, userAgent)
+		description := fmt.Sprintf("Restauration effectuée - Sauvegarde '%s' vers base de données '%s'", backup.Filename, database.Name)
+		s.actionHistoryService.LogAction(userID, "create", "restore", restore.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return restore, nil
