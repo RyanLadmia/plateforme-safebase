@@ -94,19 +94,19 @@ func (m *MegaService) DownloadFile(remotePath string) ([]byte, error) {
 	return data, nil
 }
 
-// DeleteFile deletes a file from Mega
+// DeleteFile deletes a file from Mega permanently (bypassing trash)
 func (m *MegaService) DeleteFile(remotePath string) error {
 	node, err := m.findNodeByPath(remotePath)
 	if err != nil {
 		return fmt.Errorf("file not found: %v", err)
 	}
 
-	err = m.mega.Delete(node, false)
+	err = m.mega.Delete(node, true) // true = permanent deletion, bypasses trash
 	if err != nil {
 		return fmt.Errorf("failed to delete file from Mega: %v", err)
 	}
 
-	fmt.Printf("[MEGA] Successfully deleted file: %s\n", remotePath)
+	fmt.Printf("[MEGA] Successfully permanently deleted file: %s\n", remotePath)
 	return nil
 }
 
