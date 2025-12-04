@@ -163,6 +163,10 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 		return nil, fmt.Errorf("accès non autorisé")
 	}
 
+	// Capture l'état avant modification pour les changements
+	oldCronExpression := schedule.CronExpression
+	oldActive := schedule.Active
+
 	// Validate cron expression if provided
 	if cronExpression != "" {
 		if _, err := cron.ParseStandard(cronExpression); err != nil {
@@ -202,7 +206,7 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 		return nil, fmt.Errorf("erreur lors de la mise à jour: %v", err)
 	}
 
-	// Log the action
+	// Log the action with change details
 	if s.actionHistoryService != nil {
 		db, err := s.databaseRepo.GetByID(schedule.DatabaseId)
 		if err != nil {
@@ -212,6 +216,7 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 				"database_id":     schedule.DatabaseId,
 				"cron_expression": schedule.CronExpression,
 				"active":          schedule.Active,
+				"changes":         s.buildScheduleChanges(oldCronExpression, oldActive, schedule.CronExpression, schedule.Active),
 			}
 			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
 		} else {
@@ -221,13 +226,42 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, cronExpression st
 				"database_name":   db.Name,
 				"cron_expression": schedule.CronExpression,
 				"active":          schedule.Active,
+				"changes":         s.buildScheduleChanges(oldCronExpression, oldActive, schedule.CronExpression, schedule.Active),
 			}
-			description := fmt.Sprintf("Planification modifiée pour la base de données '%s' (%s)", db.Name, schedule.CronExpression)
+			description := fmt.Sprintf("Planification modifiée pour la base de données '%s'", db.Name)
 			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 		}
 	}
 
 	return schedule, nil
+}
+
+// buildScheduleChanges builds the changes metadata for schedule updates
+func (s *ScheduleService) buildScheduleChanges(oldCronExpression string, oldActive bool, newCronExpression string, newActive bool) map[string]interface{} {
+	changes := make(map[string]interface{})
+
+	// Check if cron expression changed
+	if oldCronExpression != newCronExpression {
+		changes["cron_expression"] = map[string]interface{}{
+			"from": oldCronExpression,
+			"to":   newCronExpression,
+		}
+	}
+
+	// Check if active status changed
+	if oldActive != newActive {
+		changes["enabled"] = map[string]interface{}{
+			"from": oldActive,
+			"to":   newActive,
+		}
+	}
+
+	// Return nil if no changes
+	if len(changes) == 0 {
+		return nil
+	}
+
+	return changes
 }
 
 // DeleteSchedule deletes a schedule and logs the action

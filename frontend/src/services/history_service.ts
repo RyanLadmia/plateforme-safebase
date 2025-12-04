@@ -242,54 +242,74 @@ export class HistoryService {
    */
   getScheduleContent(item: HistoryItem): { title: string, subtitle: string, details: string[] } {
     const actionText = this.getActionText(item.action)
-    
+    const isUpdate = item.action === 'update' || item.action === 'updated'
+
     // Récupérer les informations depuis les métadonnées
     let databaseName = 'Inconnu'
     let cronExpression = ''
-    
+    let isEnabled = true
+
     if (item.metadata) {
       databaseName = item.metadata.database_name || 'Inconnu'
       cronExpression = item.metadata.cron_expression || ''
+      isEnabled = item.metadata.enabled !== undefined ? item.metadata.enabled : true
     }
-    
-    // Convertir l'expression cron en texte français en utilisant CronUtils
-    const scheduleText = CronUtils.getFrequencyDescription(cronExpression)
-    
+
     // Construire les détails
     const details: string[] = []
-    
-    // Toujours ajouter la base de données
-    details.push(`Base de données : ${databaseName}`)
-    
-    // Vérifier s'il y a des changements détaillés
-    if (item.metadata?.changes) {
+
+    // Pour les modifications, afficher les changements spécifiques
+    if (isUpdate && item.metadata?.changes) {
       const changes = item.metadata.changes as Record<string, any>
-      
-      // Traiter les changements de nom de base de données
-      if (changes.database_name) {
-        const nameChange = changes.database_name
-        if (nameChange.from && nameChange.to) {
-          details.push(`Changements : base de données de '${nameChange.from}' à '${nameChange.to}'`)
+      const changeMessages: string[] = []
+
+      // Traiter les changements de statut (enabled/disabled)
+      if (changes.enabled !== undefined) {
+        const statusChange = changes.enabled
+        if (statusChange.from !== undefined && statusChange.to !== undefined) {
+          const oldStatus = statusChange.from ? 'active' : 'inactive'
+          const newStatus = statusChange.to ? 'active' : 'inactive'
+          changeMessages.push(`planification ${oldStatus} à ${newStatus}`)
         }
       }
-      
+
       // Traiter les changements de fréquence (expression cron)
       if (changes.cron_expression) {
         const cronChange = changes.cron_expression
         if (cronChange.from && cronChange.to) {
           const oldSchedule = CronUtils.getFrequencyDescription(cronChange.from)
           const newSchedule = CronUtils.getFrequencyDescription(cronChange.to)
-          details.push(`Changements : fréquence de '${oldSchedule}' à '${newSchedule}'`)
+          changeMessages.push(`fréquence ${oldSchedule} à ${newSchedule}`)
         }
       }
-      
-      // Ici on pourrait ajouter d'autres types de changements si nécessaire
-      // (enabled/disabled, etc.)
+
+      // Traiter les changements de nom de base de données
+      if (changes.database_name) {
+        const nameChange = changes.database_name
+        if (nameChange.from && nameChange.to) {
+          changeMessages.push(`base de données '${nameChange.from}' à '${nameChange.to}'`)
+        }
+      }
+
+      // Si on a des changements, les afficher avec les détails
+      if (changeMessages.length > 0) {
+        return {
+          title: actionText,
+          subtitle: `Changement : ${changeMessages.join(', ')}`,
+          details: [`Base de données : ${databaseName}`]
+        }
+      }
     }
-    
+
+    // Pour les créations ou autres actions, afficher l'état actuel
+    const scheduleText = CronUtils.getFrequencyDescription(cronExpression)
+    const statusText = isEnabled ? '' : ' (désactivée)'
+
+    details.push(`Base de données : ${databaseName}`)
+
     return {
       title: actionText,
-      subtitle: `Planification prévue ${scheduleText}`,
+      subtitle: `Planification prévue ${scheduleText}${statusText}`,
       details: details
     }
   }
