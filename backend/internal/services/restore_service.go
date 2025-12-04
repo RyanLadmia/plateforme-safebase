@@ -332,7 +332,7 @@ func (s *RestoreService) CreateRestore(backupID uint, databaseID uint, userID ui
 			"database_id": restore.DatabaseId,
 			"status":      restore.Status,
 		}
-		s.actionHistoryService.LogAction(userID, "create", "restore", restore.Id, "Restauration créée", metadata, ipAddress, userAgent)
+		s.actionHistoryService.LogAction(userID, "create", "restore", restore.Id, "Restauration effectuée", metadata, ipAddress, userAgent)
 	}
 
 	return restore, nil

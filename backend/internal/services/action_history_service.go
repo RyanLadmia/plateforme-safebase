@@ -175,7 +175,7 @@ func (s *ActionHistoryService) LogRestoreAction(userID uint, action string, rest
 // getActionDescription returns a human-readable description for an action
 func (s *ActionHistoryService) getActionDescription(action string) string {
 	descriptions := map[string]string{
-		"created":   "créée",
+		"created":   "ajoutée",
 		"updated":   "modifiée",
 		"deleted":   "supprimée",
 		"completed": "terminée",

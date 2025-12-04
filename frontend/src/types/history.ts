@@ -42,7 +42,7 @@ export const ACTION_CONFIGS: Record<string, Record<string, ActionDescription>> =
     created: {
       icon: 'plus-circle',
       color: 'text-green-600',
-      text: 'Base de données créée'
+      text: 'Base de données ajoutée'
     },
     updated: {
       icon: 'edit',
@@ -103,7 +103,7 @@ export const ACTION_CONFIGS: Record<string, Record<string, ActionDescription>> =
     created: {
       icon: 'rotate-ccw',
       color: 'text-green-600',
-      text: 'Restauration créée'
+      text: 'Restauration effectuée'
     },
     completed: {
       icon: 'check-circle',
