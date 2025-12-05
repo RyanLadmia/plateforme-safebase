@@ -8,6 +8,29 @@
         </button>
       </div>
 
+      <!-- Filters -->
+      <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-4">
+          <!-- Database filter -->
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-700">Base de données:</label>
+            <select 
+              v-model="filterDatabaseId" 
+              class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Toutes les bases</option>
+              <option 
+                v-for="db in databases" 
+                :key="db.id" 
+                :value="db.id"
+              >
+                {{ db.name }} ({{ db.type }})
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div v-if="loading" class="text-center py-12">Chargement...</div>
       <div v-else-if="error" class="bg-red-100 text-red-700 p-4 rounded-lg">{{ error }}</div>
       <div v-else-if="schedules.length === 0" class="text-center py-12">
@@ -17,7 +40,7 @@
         </button>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="schedule in schedules" :key="schedule.id" class="bg-white rounded-lg shadow p-6">
+        <div v-for="schedule in filteredAndSortedSchedules" :key="schedule.id" class="bg-white rounded-lg shadow p-6">
           <div class="flex justify-between items-start mb-4">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-2">
@@ -194,6 +217,7 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingSchedule = ref<Schedule | null>(null)
 const cronPresets = ref<CronPreset[]>(CRON_PRESETS)
+const filterDatabaseId = ref<string>('')
 
 const form = ref<ScheduleCreateRequest & { active?: boolean }>({
   database_id: 0,
@@ -205,6 +229,65 @@ const form = ref<ScheduleCreateRequest & { active?: boolean }>({
 // Computed
 const isPresetSelected = computed(() => {
   return cronPresets.value.some(preset => preset.expression === form.value.cron_expression)
+})
+
+// Fonction pour calculer la fréquence d'une expression cron
+const getFrequencyScore = (cronExpression: string): number => {
+  const parts = cronExpression.split(' ')
+  if (parts.length !== 5) return 0
+
+  const [minute, hour, day, month, dayOfWeek] = parts
+
+  // Score basé sur la fréquence (plus le score est élevé, plus la fréquence est élevée)
+  let score = 0
+
+  // Minutes spécifiques (ex: "0" = très fréquent)
+  if (minute !== '*') score += 10
+
+  // Heures spécifiques (ex: "0" = fréquent)
+  if (hour !== '*') score += 5
+
+  // Jours spécifiques du mois (moins fréquent)
+  if (day !== '*') score += 2
+
+  // Mois spécifiques (encore moins fréquent)
+  if (month !== '*') score += 1
+
+  // Jours de la semaine spécifiques (fréquent pour les sauvegardes hebdomadaires)
+  if (dayOfWeek !== '*') score += 3
+
+  // Pénalités pour les expressions très spécifiques
+  if (minute.includes(',') || hour.includes(',') || day.includes(',') || month.includes(',') || dayOfWeek.includes(',')) {
+    score -= 2 // Moins fréquent si plusieurs valeurs
+  }
+
+  // Bonus pour les expressions quotidiennes
+  if (minute !== '*' && hour !== '*' && day === '*' && month === '*' && dayOfWeek === '*') {
+    score += 15 // Tous les jours à heure fixe = très fréquent
+  }
+
+  // Bonus pour les expressions horaires
+  if (minute !== '*' && hour === '*' && day === '*' && month === '*' && dayOfWeek === '*') {
+    score += 20 // Toutes les heures = très très fréquent
+  }
+
+  return score
+}
+
+const filteredAndSortedSchedules = computed(() => {
+  let filtered = schedules.value
+
+  // Appliquer le filtre par base de données
+  if (filterDatabaseId.value) {
+    filtered = filtered.filter(schedule => schedule.database_id === parseInt(filterDatabaseId.value))
+  }
+
+  // Trier par fréquence (plus fréquentes en premier)
+  return filtered.sort((a, b) => {
+    const scoreA = getFrequencyScore(a.cron_expression)
+    const scoreB = getFrequencyScore(b.cron_expression)
+    return scoreB - scoreA // Score décroissant = fréquence décroissante
+  })
 })
 
 // Méthodes
