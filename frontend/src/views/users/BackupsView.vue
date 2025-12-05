@@ -7,35 +7,56 @@
 
       <!-- Filters -->
       <div class="bg-white rounded-lg shadow p-4 mb-6">
-        <div class="flex flex-wrap gap-2 sm:gap-4">
-          <button 
-            @click="filterStatus = null" 
-            :class="filterStatus === null ? 'bg-blue-600 text-white' : 'bg-gray-200'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Toutes ({{ backups.length }})
-          </button>
-          <button 
-            @click="filterStatus = 'completed'" 
-            :class="filterStatus === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-200'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Terminées ({{ completedBackups.length }})
-          </button>
-          <button 
-            @click="filterStatus = 'pending'" 
-            :class="filterStatus === 'pending' ? 'bg-orange-600 text-white' : 'bg-gray-200'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            En cours ({{ pendingBackups.length }})
-          </button>
-          <button 
-            @click="filterStatus = 'failed'" 
-            :class="filterStatus === 'failed' ? 'bg-red-600 text-white' : 'bg-gray-200'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Échouées ({{ failedBackups.length }})
-          </button>
+        <div class="flex flex-wrap gap-4 items-center">
+          <!-- Status filters -->
+          <div class="flex gap-2">
+            <button 
+              @click="filterStatus = null" 
+              :class="filterStatus === null ? 'bg-blue-600 text-white' : 'bg-gray-200'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Toutes ({{ backups.length }})
+            </button>
+            <button 
+              @click="filterStatus = 'completed'" 
+              :class="filterStatus === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-200'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Terminées ({{ completedBackups.length }})
+            </button>
+            <button 
+              @click="filterStatus = 'pending'" 
+              :class="filterStatus === 'pending' ? 'bg-orange-600 text-white' : 'bg-gray-200'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              En cours ({{ pendingBackups.length }})
+            </button>
+            <button 
+              @click="filterStatus = 'failed'" 
+              :class="filterStatus === 'failed' ? 'bg-red-600 text-white' : 'bg-gray-200'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Échouées ({{ failedBackups.length }})
+            </button>
+          </div>
+
+          <!-- Database filter -->
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-700">Base de données:</label>
+            <select 
+              v-model="filterDatabaseId" 
+              class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Toutes les bases</option>
+              <option 
+                v-for="db in databases" 
+                :key="db.id" 
+                :value="db.id"
+              >
+                {{ db.name }} ({{ db.type }})
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -47,15 +68,15 @@
         </div>
         <div class="bg-white rounded-lg shadow p-4">
           <p class="text-gray-500 text-sm">Sauvegardes réussies</p>
-          <p class="text-2xl font-bold text-green-600">{{ completedBackups.length }}</p>
+          <p class="text-2xl font-bold text-green-600">{{ filteredCompletedBackups.length }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4">
           <p class="text-gray-500 text-sm">En cours</p>
-          <p class="text-2xl font-bold text-orange-600">{{ pendingBackups.length }}</p>
+          <p class="text-2xl font-bold text-orange-600">{{ filteredPendingBackups.length }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4">
           <p class="text-gray-500 text-sm">Échouées</p>
-          <p class="text-2xl font-bold text-red-600">{{ failedBackups.length }}</p>
+          <p class="text-2xl font-bold text-red-600">{{ filteredFailedBackups.length }}</p>
         </div>
       </div>
 
@@ -159,13 +180,37 @@ import { backupService } from '@/services/backup_service'
 import type { Backup } from '@/types/backup'
 
 const safebaseStore = useSafebaseStore()
-const { backups, loading, error, completedBackups, pendingBackups, failedBackups } = storeToRefs(safebaseStore)
+const { backups, loading, error, completedBackups, pendingBackups, failedBackups, databases } = storeToRefs(safebaseStore)
 
 const filterStatus = ref<string | null>(null)
+const filterDatabaseId = ref<string>('')
 
 const filteredBackups = computed(() => {
-  if (!filterStatus.value) return backupService.sortByDate(backups.value)
-  return backupService.sortByDate(backupService.filterByStatus(backups.value, filterStatus.value))
+  let filtered = backups.value
+
+  // Appliquer le filtre par statut
+  if (filterStatus.value) {
+    filtered = backupService.filterByStatus(filtered, filterStatus.value)
+  }
+
+  // Appliquer le filtre par base de données
+  if (filterDatabaseId.value) {
+    filtered = filtered.filter(backup => backup.database_id === parseInt(filterDatabaseId.value))
+  }
+
+  return backupService.sortByDate(filtered)
+})
+
+const filteredCompletedBackups = computed(() => {
+  return filteredBackups.value.filter(backup => backup.status === 'completed')
+})
+
+const filteredPendingBackups = computed(() => {
+  return filteredBackups.value.filter(backup => backup.status === 'pending')
+})
+
+const filteredFailedBackups = computed(() => {
+  return filteredBackups.value.filter(backup => backup.status === 'failed')
 })
 
 const formatDate = (dateString: string): string => {
@@ -246,5 +291,6 @@ const showFullError = (errorMsg: string) => {
 
 onMounted(() => {
   safebaseStore.fetchBackups()
+  safebaseStore.fetchDatabases()
 })
 </script>

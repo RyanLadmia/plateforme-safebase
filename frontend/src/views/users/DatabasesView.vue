@@ -8,16 +8,45 @@
         </button>
       </div>
 
+      <!-- Filter buttons -->
+      <div class="mb-6">
+        <div class="flex gap-2">
+          <button 
+            @click="filterType = 'all'" 
+            :class="filterType === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            Tous types
+          </button>
+          <button 
+            @click="filterType = 'mysql'" 
+            :class="filterType === 'mysql' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            MySQL
+          </button>
+          <button 
+            @click="filterType = 'postgresql'" 
+            :class="filterType === 'postgresql' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            PostgreSQL
+          </button>
+        </div>
+      </div>
+
       <div v-if="loading" class="text-center py-12">Chargement...</div>
       <div v-else-if="error" class="bg-red-100 text-red-700 p-4 rounded-lg">{{ error }}</div>
-      <div v-else-if="databases.length === 0" class="text-center py-12">
-        <p class="text-gray-500 mb-4">Aucune base de données configurée</p>
-        <button @click="showCreateModal = true" class="text-blue-600 hover:text-blue-800">
+      <div v-else-if="filteredDatabases.length === 0" class="text-center py-12">
+        <p class="text-gray-500">
+          {{ filterType === 'all' ? 'Aucune base de données configurée' : `Aucune base de données ${filterType === 'mysql' ? 'MySQL' : 'PostgreSQL'} trouvée` }}
+        </p>
+        <button v-if="filterType === 'all'" @click="showCreateModal = true" class="text-blue-600 hover:text-blue-800">
           Ajouter votre première base de données
         </button>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="db in databases" :key="db.id" class="bg-white rounded-lg shadow p-6">
+        <div v-for="db in filteredDatabases" :key="db.id" class="bg-white rounded-lg shadow p-6">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h3 class="text-lg font-semibold text-gray-900">{{ db.name }}</h3>
@@ -209,7 +238,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSafebaseStore } from '@/stores/safebase'
 import { databaseService } from '@/services/database_service'
@@ -225,6 +254,19 @@ const showEditModal = ref(false)
 const editingDatabase = ref<Database | null>(null)
 const formLoading = ref(false)
 const showPassword = ref(false)
+const filterType = ref<'all' | 'mysql' | 'postgresql'>('all')
+
+const filteredDatabases = computed(() => {
+  let filtered = databases.value
+  
+  // Appliquer le filtre par type
+  if (filterType.value !== 'all') {
+    filtered = filtered.filter(db => db.type === filterType.value)
+  }
+  
+  // Toujours trier par ordre alphabétique
+  return [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+})
 
 const form = reactive<DatabaseCreateRequest>({
   name: '',
