@@ -7,7 +7,7 @@
 
       <!-- Filters -->
       <div class="bg-white rounded-lg shadow p-4 mb-6">
-        <div class="flex flex-wrap gap-4 items-center">
+        <div class="flex flex-wrap justify-between items-center gap-4">
           <!-- Status filters -->
           <div class="flex gap-2">
             <button 
