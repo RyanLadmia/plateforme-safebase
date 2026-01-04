@@ -326,7 +326,7 @@ import { historyService } from '@/services/history_service'
 
 // Composables
 const safebaseStore = useSafebaseStore()
-const { databases } = storeToRefs(safebaseStore)
+const { databases, backups } = storeToRefs(safebaseStore)
 
 // State
 const loading = ref(false)
@@ -440,7 +440,7 @@ const getDatabaseContent = (item: HistoryItem) => {
 }
 
 const getBackupContent = (item: HistoryItem) => {
-  return historyService.getBackupContent(item)
+  return historyService.getBackupContent(item, backups.value)
 }
 
 const getRestoreContent = (item: HistoryItem) => {
@@ -519,6 +519,7 @@ watch(filterDatabaseId, () => {
 // Lifecycle
 onMounted(async () => {
   await safebaseStore.fetchDatabases()
+  await safebaseStore.fetchBackups()
   await loadTotals()
   await loadHistory()
 })

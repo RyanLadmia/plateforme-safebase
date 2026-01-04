@@ -178,7 +178,7 @@ export class HistoryService {
   /**
    * Obtient le contenu formaté spécial pour les sauvegardes
    */
-  getBackupContent(item: HistoryItem): { title: string, subtitle: string, details: string[] } {
+  getBackupContent(item: HistoryItem, backups?: Array<{ id: number; status: string }>): { title: string, subtitle: string, details: string[] } {
     const actionText = this.getActionText(item.action)
     
     // Récupérer les informations depuis les métadonnées
@@ -212,10 +212,30 @@ export class HistoryService {
     const isAutomatic = item.user_agent === 'Scheduled Task'
     const backupType = isAutomatic ? 'Sauvegarde automatique' : 'Sauvegarde manuelle'
     
+    // Construire les détails
+    const details: string[] = [`Base de données : ${databaseName}`]
+    
+    // Afficher le statut uniquement pour les créations de sauvegardes
+    if (item.action === 'create' && item.metadata?.backup_id && backups) {
+      const backupId = item.metadata.backup_id
+      const backup = backups.find(b => b.id === backupId)
+      
+      if (backup) {
+        // Mapper le statut réel de la sauvegarde
+        const statusMap: Record<string, string> = {
+          pending: 'En cours',
+          completed: 'Succès',
+          failed: 'Échec'
+        }
+        const status = statusMap[backup.status] || backup.status
+        details.push(`Statut : ${status}`)
+      }
+    }
+    
     return {
       title: actionText,
       subtitle: `${backupType}<br>Fichier : ${fileName}`,
-      details: [`Base de données : ${databaseName}`]
+      details: details
     }
   }
 
