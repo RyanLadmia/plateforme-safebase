@@ -1,0 +1,25 @@
+# Fichiers temporaires
+tmp/
+cmd/tmp/
+*.log
+
+# Fichiers de développement
+.env
+.env.local
+
+# Binaires
+main
+*.exe
+
+# Fichiers de sauvegarde
+db/backups/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+README.md
+MINIO_README.md
+

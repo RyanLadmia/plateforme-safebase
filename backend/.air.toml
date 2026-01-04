@@ -2,19 +2,20 @@
 root = "."
 
 # dossier temporaire pour Air (binaire compilé)
-tmp_dir = "cmd/tmp"
+tmp_dir = "tmp"
 
 [build]
-  bin = "./cmd/tmp/main"                # chemin du binaire généré
-  cmd = "go build -o ./cmd/tmp/main ./cmd"  # build depuis le dossier cmd
+  bin = "./tmp/main"                # chemin du binaire généré
+  cmd = "go build -o ./tmp/main ./cmd"  # build depuis le dossier cmd
   delay = 500                           # délai avant rebuild (ms)
-  exclude_dir = ["assets", "vendor", "testdata"] # dossiers ignorés
+  exclude_dir = ["assets", "vendor", "testdata", "db/backups"] # dossiers ignorés
   exclude_regex = ["_test.go"]          # fichiers test ignorés
   exclude_unchanged = true              # rebuild uniquement si changement
   include_ext = ["go", "tpl", "tmpl", "html"]
   kill_delay = "100ms"                  # délai pour arrêter le serveur avant rebuild
   log = "build-errors.log"
-  poll = false
+  poll = true                           # utiliser polling pour Docker
+  poll_interval = 500                   # intervalle de polling (ms)
   pre_cmd = []
   post_cmd = []
 
