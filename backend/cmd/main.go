@@ -138,6 +138,15 @@ func main() {
 		c.JSON(200, gin.H{"message": "Safebase API is running!"})
 	})
 
+	// Health check endpoint for monitoring and CI/CD
+	server.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "healthy",
+			"service": "safebase-api",
+			"version": "1.0.0",
+		})
+	})
+
 	// Integration of authentication routes (/auth/register, /auth/login, /auth/logout)
 	routes.AuthRoutes(server, authHandler, cfg.JWT_SECRET)
 

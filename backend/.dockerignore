@@ -1,25 +1,57 @@
-# Fichiers temporaires
-tmp/
-cmd/tmp/
-*.log
-
-# Fichiers de développement
-.env
-.env.local
-
-# Binaires
-main
-*.exe
-
-# Fichiers de sauvegarde
-db/backups/
-
 # Git
-.git/
+.git
 .gitignore
+.github
 
 # Documentation
 *.md
 README.md
-MINIO_README.md
+LICENSE
 
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Tests
+*_test.go
+testdata
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Logs
+*.log
+logs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Database files
+*.db
+*.sqlite
+*.sql
+
+# Backups
+db/backups/*
+backups/*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Coverage
+coverage.txt
+*.out
