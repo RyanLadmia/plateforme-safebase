@@ -41,7 +41,7 @@ STAGING_PORT        # Port SSH staging (optionnel)
 STAGING_PATH        # Chemin vers l'application staging
 ```
 
-## � Génération de la clé SSH
+## Génération de la clé SSH
 
 Sur votre machine locale :
 
@@ -52,7 +52,7 @@ ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_deploy
 # Copier la clé publique sur le serveur
 ssh-copy-id -i ~/.ssh/github_deploy.pub user@votre-serveur.com
 
-# Afficher la clé privée (� copier dans DEPLOY_SSH_KEY)
+# Afficher la clé privée (à copier dans DEPLOY_SSH_KEY)
 cat ~/.ssh/github_deploy
 ```
 
@@ -81,7 +81,7 @@ cat ~/.ssh/github_deploy
 ### 1. Installer Docker et Docker Compose
 
 ```bash
-# Mettre � jour le syst�me
+# Mettre à jour le système
 sudo apt update && sudo apt upgrade -y
 
 # Installer Docker
@@ -104,7 +104,7 @@ sudo mkdir -p /opt/safebase
 sudo chown $USER:$USER /opt/safebase
 cd /opt/safebase
 
-# Cloner le repository (premi�re fois)
+# Cloner le repository (première fois)
 git clone https://github.com/votre-username/plateforme-safebase.git .
 ```
 
@@ -266,15 +266,15 @@ docker-compose restart backend
 docker-compose restart frontend
 ```
 
-##  Rollback en cas de probl�me
+##  Rollback en cas de problème
 
-Si un déploiement échoue, vous pouvez revenir � la version précédente :
+Si un déploiement échoue, vous pouvez revenir à la version précédente :
 
 ```bash
 # Voir les images disponibles
 docker images
 
-# Revenir � une version spécifique
+# Revenir à une version spécifique
 docker-compose down
 docker tag votre-username/safebase-backend:sha-abc123 votre-username/safebase-backend:latest
 docker-compose up -d
@@ -302,12 +302,12 @@ Utilisez Nginx Proxy Manager ou Traefik pour gérer automatiquement les certific
 
 ##  Monitoring (optionnel)
 
-Le projet inclut déj� Prometheus et Grafana. Pour y accéder :
+Le projet inclut déjà Prometheus et Grafana. Pour y accéder :
 
 - Prometheus: `http://votre-serveur:9090`
 - Grafana: `http://votre-serveur:3001`
 
-## � Dépannage
+## Dépannage
 
 ### Les conteneurs ne démarrent pas
 
@@ -322,10 +322,10 @@ df -h
 docker system prune -a
 ```
 
-### Probl�me de connexion � la base de données
+### Problème de connexion à la base de données
 
 ```bash
-# Vérifier que les conteneurs sont sur le m�me réseau
+# Vérifier que les conteneurs sont sur le même réseau
 docker network ls
 docker network inspect safebase-network
 
@@ -336,7 +336,7 @@ docker-compose exec backend ping postgres
 ### Les images ne se téléchargent pas
 
 ```bash
-# Vérifier la connexion � Docker Hub
+# Vérifier la connexion à Docker Hub
 docker login
 
 # Pull manuel
@@ -345,9 +345,9 @@ docker pull votre-username/safebase-backend:latest
 
 ##  Notes
 
-- Le pipeline s'exécute automatiquement � chaque push sur `main` ou `develop`
+- Le pipeline s'exécute automatiquement à chaque push sur `main` ou `develop`
 - Les images Docker sont multi-architecture (amd64 et arm64)
-- Les anciennes images sont automatiquement nettoyées apr�s déploiement
+- Les anciennes images sont automatiquement nettoyées après déploiement
 - Un backup de `.env` est créé avant chaque déploiement
 
 ##  Ressources

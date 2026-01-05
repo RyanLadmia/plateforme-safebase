@@ -122,6 +122,7 @@ func main() {
 	profileHandler := handlers.NewProfileHandler(userService, authService)
 	restoreHandler := handlers.NewRestoreHandler(restoreService)
 	actionHistoryHandler := handlers.NewActionHistoryHandler(actionHistoryService)
+	testHandler := handlers.NewTestHandler(userRepo)
 
 	// Initialize middleware
 	authMiddleware := middlewares.NewAuthMiddleware(cfg.JWT_SECRET)
@@ -159,6 +160,9 @@ func main() {
 	routes.UserRoutes(server, userHandler, authMiddleware)
 	routes.ProfileRoutes(server, profileHandler, authMiddleware)
 	routes.SetupActionHistoryRoutes(server, actionHistoryHandler, authMiddleware)
+
+	// Test routes (only in non-production)
+	routes.TestRoutes(server, testHandler)
 
 	// Initialize worker pool for background tasks
 	workerPool := utils.NewWorkerPool(5) // 5 workers

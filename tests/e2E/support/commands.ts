@@ -157,5 +157,25 @@ Cypress.Commands.add('checkAccessibility', () => {
   })
 })
 
+/**
+ * Clean up test users - Removes all users with @e2e.com email domain
+ * This should be called after test suites to clean up the database
+ */
+Cypress.Commands.add('cleanupTestUsers', () => {
+  const apiBaseUrl = Cypress.config('baseUrl')?.replace(':3000', ':8080') || 'http://localhost:8080'
+  
+  cy.request({
+    method: 'POST',
+    url: `${apiBaseUrl}/api/test/cleanup-users`,
+    failOnStatusCode: false
+  }).then((response) => {
+    if (response.status === 200) {
+      cy.log(`Cleaned up ${response.body.deleted_count || 0} test users`)
+    } else {
+      cy.log('Cleanup endpoint not available or failed')
+    }
+  })
+})
+
 export {}
 

@@ -184,7 +184,7 @@ DB_NAME=safebase
 # Serveur
 PORT=8080
 
-# Sauvegardes MEGA (optionnel)
+# Sauvegardes MEGA 
 MEGA_EMAIL=votre_email@example.com
 MEGA_PASSWORD=votre_mot_de_passe_mega
 ```
@@ -418,11 +418,29 @@ npm cache clean --force
 npm install
 ```
 
+### Base de données polluée par les utilisateurs de test
+
+Les tests E2E créent des utilisateurs de test avec des emails `@e2e.com`. Pour les nettoyer :
+
+```bash
+# Nettoyage automatique (recommandé)
+# Exécuté automatiquement après chaque fichier de test Cypress
+
+# Nettoyage manuel avec script
+./cleanup-test-users.sh
+
+# Commande Cypress manuelle
+cy.cleanupTestUsers()
+```
+
+Voir `tests/CLEANUP.md` pour plus de détails.
+
 ## Documentation supplémentaire
 
 - `backend/README.md` - Documentation backend détaillée
 - `frontend/README.md` - Documentation frontend
 - `tests/README.md` - Guide complet des tests E2E
+- `tests/CLEANUP.md` - Guide de nettoyage des utilisateurs de test
 
 ## Contribution
 

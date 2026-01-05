@@ -31,6 +31,18 @@ declare namespace Cypress {
       password: string
       confirm_password?: string
     }): Chainable<void>
+
+    /**
+     * Custom command to check basic accessibility
+     * @example cy.checkAccessibility()
+     */
+    checkAccessibility(): Chainable<void>
+
+    /**
+     * Custom command to clean up test users from database
+     * @example cy.cleanupTestUsers()
+     */
+    cleanupTestUsers(): Chainable<void>
   }
 }
 

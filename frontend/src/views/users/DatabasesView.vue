@@ -42,7 +42,7 @@
           {{ filterType === 'all' ? 'Aucune base de données configurée' : `Aucune base de données ${filterType === 'mysql' ? 'MySQL' : 'PostgreSQL'} trouvée` }}
         </p>
         <button v-if="filterType === 'all'" @click="showCreateModal = true" class="text-blue-600 hover:text-blue-800">
-          Ajouter votre premi�re base de données
+          Ajouter votre première base de données
         </button>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -163,10 +163,10 @@
             </div>
           </div>
 
-          <!-- URL compl�te (optionnel) -->
+          <!-- URL complète (optionnel) -->
           <div>
             <label class="block text-sm font-medium mb-2">
-              URL compl�te (optionnel)
+              URL complète (optionnel)
               <span class="text-xs text-gray-500 ml-2">Alternative aux champs individuels</span>
             </label>
             <input
@@ -217,7 +217,7 @@
               <div>
                 <h3 class="text-sm font-medium text-blue-800">Modification sécurisée</h3>
                 <p class="text-sm text-blue-700 mt-1">
-                  Seuls le nom de la base de données peut �tre modifié. Les informations de connexion restent inchangées et sécurisées.
+                  Seuls le nom de la base de données peut être modifié. Les informations de connexion restent inchangées et sécurisées.
                 </p>
               </div>
             </div>
@@ -228,7 +228,7 @@
               Annuler
             </button>
             <button type="submit" :disabled="formLoading" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
-              {{ formLoading ? 'Mise � jour...' : 'Mettre � jour' }}
+              {{ formLoading ? 'Mise à jour...' : 'Mettre à jour' }}
             </button>
           </div>
         </form>
@@ -304,7 +304,7 @@ const deleteDatabase = async (id: number) => {
     const backupCount = details.backup_count
     const dbName = details.database.name
     
-    let message = `�tes-vous sûr de vouloir supprimer la base de données "${dbName}" ?`
+    let message = `Êtes-vous sûr de vouloir supprimer la base de données "${dbName}" ?`
     
     if (backupCount > 0) {
       message += `\n\n Cette action supprimera également ${backupCount} sauvegarde(s) associée(s) et tous les fichiers stockés dans le cloud.`
@@ -316,7 +316,7 @@ const deleteDatabase = async (id: number) => {
     
     await safebaseStore.deleteDatabaseAsync(id)
     
-    let successMessage = 'Base de données supprimée avec succ�s !'
+    let successMessage = 'Base de données supprimée avec succès !'
     if (backupCount > 0) {
       successMessage += ` (${backupCount} sauvegarde(s) supprimée(s) également)`
     }
@@ -331,7 +331,7 @@ const createBackupForDb = async (dbId: number) => {
   try {
     const backup = await backupService.createBackup(dbId)
     safebaseStore.addBackup(backup)
-    alert('Sauvegarde lancée avec succ�s !')
+    alert('Sauvegarde lancée avec succès !')
   } catch (err: any) {
     alert(err.message)
   }
@@ -363,7 +363,7 @@ const updateDatabaseName = async () => {
   try {
     await safebaseStore.updateDatabasePartialAsync(editingDatabase.value.id, { name: editForm.name })
     
-    // Mettre � jour editingDatabase avec la version fraîche du store
+    // Mettre à jour editingDatabase avec la version fraîche du store
     const updatedDb = safebaseStore.databases.find(db => db.id === editingDatabase.value!.id)
     if (updatedDb) {
       editingDatabase.value = updatedDb

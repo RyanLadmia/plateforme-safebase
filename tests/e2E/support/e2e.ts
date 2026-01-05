@@ -30,6 +30,12 @@ afterEach(function() {
   }
 })
 
+// After all tests in a spec file
+after(() => {
+  // Clean up test users after completing all tests in this spec
+  cy.cleanupTestUsers()
+})
+
 // Global types for better TypeScript support
 declare global {
   namespace Cypress {
