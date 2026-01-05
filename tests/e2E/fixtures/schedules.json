@@ -1,0 +1,47 @@
+{
+  "schedules": {
+    "hourly": {
+      "name": "Hourly Backup",
+      "cron_expression": "0 * * * *"
+    },
+    "daily": {
+      "name": "Daily Backup at 2 AM",
+      "cron_expression": "0 2 * * *"
+    },
+    "weekly": {
+      "name": "Weekly Backup on Sunday",
+      "cron_expression": "0 0 * * 0"
+    },
+    "monthly": {
+      "name": "Monthly Backup on 1st",
+      "cron_expression": "0 0 1 * *"
+    },
+    "every30min": {
+      "name": "Every 30 Minutes",
+      "cron_expression": "*/30 * * * *"
+    },
+    "weekdays": {
+      "name": "Weekdays at 9 AM",
+      "cron_expression": "0 9 * * 1-5"
+    }
+  },
+  "invalidSchedules": {
+    "invalidCron": {
+      "name": "Invalid Cron",
+      "cron_expression": "invalid cron expression"
+    },
+    "tooManyFields": {
+      "name": "Too Many Fields",
+      "cron_expression": "* * * * * *"
+    },
+    "empty": {
+      "name": "Empty Cron",
+      "cron_expression": ""
+    },
+    "outOfRange": {
+      "name": "Out of Range",
+      "cron_expression": "60 * * * *"
+    }
+  }
+}
+

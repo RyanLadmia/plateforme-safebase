@@ -1,0 +1,70 @@
+{
+  "databases": {
+    "mysql": {
+      "name": "Test MySQL Database",
+      "type": "mysql",
+      "host": "localhost",
+      "port": "3306",
+      "username": "test_user",
+      "password": "test_password",
+      "db_name": "test_db"
+    },
+    "postgresql": {
+      "name": "Test PostgreSQL Database",
+      "type": "postgresql",
+      "host": "localhost",
+      "port": "5432",
+      "username": "postgres",
+      "password": "postgres_pass",
+      "db_name": "postgres_db"
+    },
+    "production": {
+      "name": "Production MySQL",
+      "type": "mysql",
+      "host": "prod.example.com",
+      "port": "3306",
+      "username": "prod_user",
+      "password": "SecureP@ss123",
+      "db_name": "production_db"
+    },
+    "staging": {
+      "name": "Staging PostgreSQL",
+      "type": "postgresql",
+      "host": "staging.example.com",
+      "port": "5432",
+      "username": "staging_user",
+      "password": "StagingP@ss123",
+      "db_name": "staging_db"
+    }
+  },
+  "invalidDatabases": {
+    "emptyName": {
+      "name": "",
+      "type": "mysql",
+      "host": "localhost",
+      "port": "3306",
+      "username": "user",
+      "password": "pass",
+      "db_name": "db"
+    },
+    "invalidType": {
+      "name": "Invalid DB",
+      "type": "mongodb",
+      "host": "localhost",
+      "port": "27017",
+      "username": "user",
+      "password": "pass",
+      "db_name": "db"
+    },
+    "invalidPort": {
+      "name": "Invalid Port DB",
+      "type": "mysql",
+      "host": "localhost",
+      "port": "99999",
+      "username": "user",
+      "password": "pass",
+      "db_name": "db"
+    }
+  }
+}
+

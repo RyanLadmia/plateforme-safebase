@@ -1,0 +1,23 @@
+{
+  "testUser": {
+    "id": 999,
+    "email": "cypress.test@e2e.com",
+    "firstname": "Cypress",
+    "lastname": "Tester",
+    "role": {
+      "id": 2,
+      "name": "user"
+    }
+  },
+  "adminUser": {
+    "id": 1,
+    "email": "admin@e2e.com",
+    "firstname": "Admin",
+    "lastname": "User",
+    "role": {
+      "id": 1,
+      "name": "admin"
+    }
+  }
+}
+

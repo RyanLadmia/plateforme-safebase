@@ -68,7 +68,7 @@ func main() {
 	// Initialize backup service with backup directory
 	backupDir := filepath.Join(".", "db", "backups")
 	databaseService := services.NewDatabaseService(databaseRepo, backupRepo, restoreRepo, scheduleRepo, nil) // backupService will be set later
-	userService := services.NewUserService(userRepo, roleRepo)
+	userService := services.NewUserService(userRepo, roleRepo, actionHistoryRepo)
 	backupService := services.NewBackupService(backupRepo, databaseService, userService, backupDir)
 	// Set backupService reference in databaseService to enable cascade deletion
 	databaseService.SetBackupService(backupService)
@@ -119,6 +119,7 @@ func main() {
 	backupHandler := handlers.NewBackupHandler(backupService)
 	scheduleHandler := handlers.NewScheduleHandler(scheduleService)
 	userHandler := handlers.NewUserHandler(userService)
+	profileHandler := handlers.NewProfileHandler(userService, authService)
 	restoreHandler := handlers.NewRestoreHandler(restoreService)
 	actionHistoryHandler := handlers.NewActionHistoryHandler(actionHistoryService)
 
@@ -156,6 +157,7 @@ func main() {
 	routes.SetupScheduleRoutes(server, scheduleHandler, authMiddleware)
 	routes.SetupRestoreRoutes(server, restoreHandler, authMiddleware)
 	routes.UserRoutes(server, userHandler, authMiddleware)
+	routes.ProfileRoutes(server, profileHandler, authMiddleware)
 	routes.SetupActionHistoryRoutes(server, actionHistoryHandler, authMiddleware)
 
 	// Initialize worker pool for background tasks

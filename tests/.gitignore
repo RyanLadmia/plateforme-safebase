@@ -1,0 +1,8 @@
+node_modules/
+dist/
+e2E/videos/
+e2E/screenshots/
+*.log
+.DS_Store
+cypress/downloads/
+
