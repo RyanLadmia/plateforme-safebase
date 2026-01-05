@@ -155,6 +155,14 @@ docker-compose build
 docker-compose exec backend sh
 docker-compose exec frontend sh
 
+# Accéder au conteneur de la base de données 
+docker-compose exec postgres psql -U user -d safebase
+
+# Réattribuer un rôle admin au premier utilisateur inscrit
+UPDATE users
+SET role_id = 1
+WHERE id = 1;
+
 # Nettoyer complètement (supprime les volumes)
 docker-compose down -v
 ```
