@@ -146,7 +146,7 @@
                 v-model="registerForm.password"
                 :type="showRegisterPassword ? 'text' : 'password'"
                 required
-                placeholder="Min. 10 caract�res, maj, min, chiffre, spécial"
+                placeholder="Min. 10 caractères, maj, min, chiffre, spécial"
                 class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
               <button
@@ -210,7 +210,7 @@
       </form>
     </div>
 
-    <!-- Messages d'erreur/succ�s -->
+    <!-- Messages d'erreur/succès -->
     <div v-if="message" :class="[
       'mt-4 p-4 rounded-lg text-center font-medium transition-all duration-200',
       messageType === 'success' 
@@ -280,7 +280,7 @@ const handleLogin = async (): Promise<void> => {
     // Réinitialise le formulaire
     loginForm.value = { email: '', password: '' }
     
-    // �met l'événement de connexion réussie
+    // Émet l'événement de connexion réussie
     emit('login-success')
   } catch (error) {
     showMessage(error instanceof Error ? error.message : 'Erreur de connexion', 'error')
@@ -295,7 +295,7 @@ const handleRegister = async (): Promise<void> => {
     await authStore.register(registerForm.value)
     showMessage('Inscription réussie ! Vous pouvez maintenant vous connecter.', 'success')
     
-    // Réinitialise le formulaire et passe � la connexion
+    // Réinitialise le formulaire et passe à la connexion
     registerForm.value = { firstname: '', lastname: '', email: '', password: '', confirm_password: '' }
     currentForm.value = 'login'
   } catch (error) {
@@ -322,7 +322,7 @@ onMounted((): void => {
   // Attendre que le store soit initialisé avant de vérifier l'authentification
   watch(initialized, (isInit) => {
     if (isInit && isAuthenticated.value) {
-      showMessage('Vous �tes déj� connecté !', 'success')
+      showMessage('Vous êtes déjà connecté !', 'success')
     }
   }, { immediate: true })
 })

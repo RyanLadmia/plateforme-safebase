@@ -262,7 +262,7 @@ const downloadBackup = async (backup: Backup) => {
 }
 
 const deleteBackup = async (id: number) => {
-  if (!confirm('�tes-vous sûr de vouloir supprimer cette sauvegarde ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette sauvegarde ?')) return
   try {
     await backupService.deleteBackup(id)
     safebaseStore.removeBackup(id)
@@ -273,20 +273,20 @@ const deleteBackup = async (id: number) => {
 
 const restoreBackup = async (backup: Backup) => {
   // Confirmation simple avant restauration
-  if (!confirm(`�tes-vous sûr de vouloir restaurer la sauvegarde "${backup.filename}" ?\n\n Attention : Cette opération va remplacer les données actuelles de la base de données d'origine.`)) {
+  if (!confirm(`Êtes-vous sûr de vouloir restaurer la sauvegarde "${backup.filename}" ?\n\n Attention : Cette opération va remplacer les données actuelles de la base de données d'origine.`)) {
     return
   }
   
   try {
     await backupService.restoreBackup(backup)
-    alert('Restauration lancée avec succ�s ! Le processus peut prendre quelques minutes.')
+    alert('Restauration lancée avec succès ! Le processus peut prendre quelques minutes.')
   } catch (err: any) {
     alert(`Erreur lors de la restauration : ${err.message}`)
   }
 }
 
 const showFullError = (errorMsg: string) => {
-  alert(`Erreur compl�te :\n\n${errorMsg}`)
+  alert(`Erreur complète :\n\n${errorMsg}`)
 }
 
 onMounted(() => {

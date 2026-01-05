@@ -36,7 +36,7 @@
       <div v-else-if="schedules.length === 0" class="text-center py-12">
         <p class="text-gray-500 mb-4">Aucune sauvegarde planifiée</p>
         <button @click="showCreateModal = true" class="text-blue-600 hover:text-blue-800">
-          Créer votre premi�re planification
+          Créer votre première planification
         </button>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -212,7 +212,7 @@ const {
   error
 } = storeToRefs(safebaseStore)
 
-// �tat local
+// État local
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingSchedule = ref<Schedule | null>(null)
@@ -356,7 +356,7 @@ const toggleSchedule = async (schedule: Schedule) => {
 }
 
 const deleteSchedule = async (id: number) => {
-  if (!confirm('�tes-vous sûr de vouloir supprimer cette planification ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette planification ?')) return
 
   try {
     await scheduleService.deleteSchedule(id)
