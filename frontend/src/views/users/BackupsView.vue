@@ -36,7 +36,7 @@
               :class="filterStatus === 'failed' ? 'bg-red-600 text-white' : 'bg-gray-200'"
               class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
             >
-              �chouées ({{ failedBackups.length }})
+              Échouées ({{ failedBackups.length }})
             </button>
           </div>
 
@@ -75,7 +75,7 @@
           <p class="text-2xl font-bold text-orange-600">{{ filteredPendingBackups.length }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4">
-          <p class="text-gray-500 text-sm">�chouées</p>
+          <p class="text-gray-500 text-sm">Échouées</p>
           <p class="text-2xl font-bold text-red-600">{{ filteredFailedBackups.length }}</p>
         </div>
       </div>
@@ -262,7 +262,7 @@ const downloadBackup = async (backup: Backup) => {
 }
 
 const deleteBackup = async (id: number) => {
-  if (!confirm('�tes-vous sûr de vouloir supprimer cette sauvegarde ?')) return
+  if (!confirm('�tes-vous sûr de vouloir supprimer cette sauvegarde ?')) return
   try {
     await backupService.deleteBackup(id)
     safebaseStore.removeBackup(id)
@@ -273,20 +273,20 @@ const deleteBackup = async (id: number) => {
 
 const restoreBackup = async (backup: Backup) => {
   // Confirmation simple avant restauration
-  if (!confirm(`�tes-vous sûr de vouloir restaurer la sauvegarde "${backup.filename}" ?\n\n Attention : Cette opération va remplacer les données actuelles de la base de données d'origine.`)) {
+  if (!confirm(`�tes-vous sûr de vouloir restaurer la sauvegarde "${backup.filename}" ?\n\n Attention : Cette opération va remplacer les données actuelles de la base de données d'origine.`)) {
     return
   }
   
   try {
     await backupService.restoreBackup(backup)
-    alert('Restauration lancée avec succ�s ! Le processus peut prendre quelques minutes.')
+    alert('Restauration lancée avec succ�s ! Le processus peut prendre quelques minutes.')
   } catch (err: any) {
     alert(`Erreur lors de la restauration : ${err.message}`)
   }
 }
 
 const showFullError = (errorMsg: string) => {
-  alert(`Erreur compl�te :\n\n${errorMsg}`)
+  alert(`Erreur compl�te :\n\n${errorMsg}`)
 }
 
 onMounted(() => {

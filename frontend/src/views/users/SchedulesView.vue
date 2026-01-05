@@ -36,7 +36,7 @@
       <div v-else-if="schedules.length === 0" class="text-center py-12">
         <p class="text-gray-500 mb-4">Aucune sauvegarde planifiée</p>
         <button @click="showCreateModal = true" class="text-blue-600 hover:text-blue-800">
-          Créer votre premi�re planification
+          Créer votre premi�re planification
         </button>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -131,7 +131,7 @@
               class="w-full px-4 py-2 border rounded-lg"
             />
             <p class="text-xs text-gray-500 mt-1">
-              Donnez un nom descriptif � votre planification
+              Donnez un nom descriptif à votre planification
             </p>
           </div>
 
@@ -149,7 +149,7 @@
                 <label class="block text-xs text-gray-600 mb-1">Expression Cron personnalisée</label>
                 <input
                   v-model="form.cron_expression"
-                  placeholder="0 0 * * * (tous les jours � minuit)"
+                  placeholder="0 0 * * * (tous les jours à minuit)"
                   required
                   class="w-full px-4 py-2 border rounded-lg text-sm"
                 />
@@ -212,7 +212,7 @@ const {
   error
 } = storeToRefs(safebaseStore)
 
-// �tat local
+// �tat local
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingSchedule = ref<Schedule | null>(null)
@@ -241,7 +241,7 @@ const getFrequencyScore = (cronExpression: string): number => {
   // Score basé sur la fréquence (plus le score est élevé, plus la fréquence est élevée)
   let score = 0
 
-  // Minutes spécifiques (ex: "0" = tr�s fréquent)
+  // Minutes spécifiques (ex: "0" = très fréquent)
   if (minute !== '*') score += 10
 
   // Heures spécifiques (ex: "0" = fréquent)
@@ -256,19 +256,19 @@ const getFrequencyScore = (cronExpression: string): number => {
   // Jours de la semaine spécifiques (fréquent pour les sauvegardes hebdomadaires)
   if (dayOfWeek !== '*') score += 3
 
-  // Pénalités pour les expressions tr�s spécifiques
+  // Pénalités pour les expressions très spécifiques
   if (minute.includes(',') || hour.includes(',') || day.includes(',') || month.includes(',') || dayOfWeek.includes(',')) {
     score -= 2 // Moins fréquent si plusieurs valeurs
   }
 
   // Bonus pour les expressions quotidiennes
   if (minute !== '*' && hour !== '*' && day === '*' && month === '*' && dayOfWeek === '*') {
-    score += 15 // Tous les jours � heure fixe = tr�s fréquent
+    score += 15 // Tous les jours à heure fixe = très fréquent
   }
 
   // Bonus pour les expressions horaires
   if (minute !== '*' && hour === '*' && day === '*' && month === '*' && dayOfWeek === '*') {
-    score += 20 // Toutes les heures = tr�s tr�s fréquent
+    score += 20 // Toutes les heures = très très fréquent
   }
 
   return score
@@ -356,7 +356,7 @@ const toggleSchedule = async (schedule: Schedule) => {
 }
 
 const deleteSchedule = async (id: number) => {
-  if (!confirm('�tes-vous sûr de vouloir supprimer cette planification ?')) return
+  if (!confirm('�tes-vous sûr de vouloir supprimer cette planification ?')) return
 
   try {
     await scheduleService.deleteSchedule(id)
