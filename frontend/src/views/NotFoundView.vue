@@ -8,7 +8,7 @@
         to="/" 
         class="mt-6 inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
       >
-        Retour Ã  l'accueil
+        Retour Ã l'accueil
       </router-link>
     </div>
   </div>

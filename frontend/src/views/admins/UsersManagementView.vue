@@ -7,7 +7,7 @@
           to="/admin/dashboard"
           class="text-blue-600 hover:text-blue-800"
         >
-          ← Retour au tableau de bord
+           Retour au tableau de bord
         </router-link>
       </div>
 
@@ -279,7 +279,7 @@
               {{ confirmAction === 'deactivate' ? 'Désactiver' : 'Activer' }} l'utilisateur
             </h3>
             <p class="text-sm text-gray-500 mb-4">
-              Êtes-vous sûr de vouloir {{ confirmAction === 'deactivate' ? 'désactiver' : 'activer' }}
+              �tes-vous sûr de vouloir {{ confirmAction === 'deactivate' ? 'désactiver' : 'activer' }}
               l'utilisateur <strong>{{ selectedUser?.firstname }} {{ selectedUser?.lastname }}</strong> ?
             </p>
 
@@ -325,7 +325,7 @@ const {
   adminUsers: adminUsersGetter
 } = storeToRefs(safebaseStore)
 
-// État local
+// �tat local
 const showActiveOnly = ref(false)
 const showEditModal = ref(false)
 const showConfirmModal = ref(false)
@@ -333,7 +333,7 @@ const saving = ref(false)
 const selectedUser = ref<User | null>(null)
 const confirmAction = ref<'activate' | 'deactivate'>('activate')
 
-// État du formulaire d'édition
+// �tat du formulaire d'édition
 const editForm = ref<UserUpdateRequest & { role_id?: number }>({
   firstname: '',
   lastname: '',

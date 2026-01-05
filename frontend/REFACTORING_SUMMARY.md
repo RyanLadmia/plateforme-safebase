@@ -1,6 +1,6 @@
 # Résumé du refactoring Frontend
 
-## ✅ Réalisations
+## Réalisations
 
 ### 1. **Installation d'Axios**
 ```bash
@@ -108,20 +108,20 @@ interface Backup {
 - **`ARCHITECTURE.md`** : Documentation complète de l'architecture
 - **`REFACTORING_SUMMARY.md`** : Ce fichier !
 
-## 📊 Métriques
+## Métriques
 
 ### Réduction de code
 - **auth.ts** : 165 → 82 lignes (-50%)
 - **Code plus modulaire** : Divisé en API/Services/Stores
 
 ### Amélioration de la qualité
-- ✅ Séparation des responsabilités claire
-- ✅ Types TypeScript complets
-- ✅ Gestion d'erreurs centralisée
-- ✅ Code DRY (Don't Repeat Yourself)
-- ✅ Testabilité accrue
+- Séparation des responsabilités claire
+- Types TypeScript complets
+- Gestion d'erreurs centralisée
+- Code DRY (Don't Repeat Yourself)
+- Testabilité accrue
 
-## 🎯 Architecture finale
+## Architecture finale
 
 ```
 ┌─────────────────┐
@@ -145,7 +145,7 @@ interface Backup {
 └─────────────────┘
 ```
 
-## 🔄 Flux de données type
+## Flux de données type
 
 **Exemple : Créer une sauvegarde**
 
@@ -178,14 +178,14 @@ export async function createBackup(databaseId: number): Promise<Backup> {
 }
 ```
 
-## 🚀 Prochaines étapes
+## Prochaines étapes
 
 ### À faire immédiatement :
-1. ✅ Architecture de base ← **FAIT**
-2. ⏳ Créer les vues utilisateurs (dashboard, databases, backups)
-3. ⏳ Créer les vues admin
-4. ⏳ Mettre à jour le router avec guards pour user/admin
-5. ⏳ Tester l'intégration complète
+1. Architecture de base ← **FAIT**
+2. Créer les vues utilisateurs (dashboard, databases, backups)
+3. Créer les vues admin
+4. Mettre à jour le router avec guards pour user/admin
+5. Tester l'intégration complète
 
 ### Améliorations futures :
 - [ ] Ajouter des tests unitaires (Vitest)
@@ -195,7 +195,7 @@ export async function createBackup(databaseId: number): Promise<Backup> {
 - [ ] Ajouter un système de cache
 - [ ] Gérer le mode hors-ligne
 
-## 💡 Avantages de la nouvelle architecture
+## Avantages de la nouvelle architecture
 
 ### Pour le développement
 - Code plus lisible et maintenable
@@ -214,15 +214,15 @@ export async function createBackup(databaseId: number): Promise<Backup> {
 - Gestion d'état centralisée
 - Code DRY partout
 
-## 📝 Notes importantes
+## Notes importantes
 
 ### Axios vs Fetch
-- ✅ Gestion automatique des erreurs HTTP
-- ✅ Intercepteurs pour middleware global
-- ✅ Transformation automatique JSON
-- ✅ Support TypeScript natif
-- ✅ Timeout configurable
-- ✅ Annulation de requêtes (AbortController intégré)
+- Gestion automatique des erreurs HTTP
+- Intercepteurs pour middleware global
+- Transformation automatique JSON
+- Support TypeScript natif
+- Timeout configurable
+- Annulation de requêtes (AbortController intégré)
 
 ### Cookies HTTP-only
 L'application utilise des cookies HTTP-only pour la sécurité :
@@ -240,4 +240,4 @@ views/
 
 ---
 
-**Architecture refactorisée avec succès ! 🎉**
+**Architecture refactorisée avec succès !**

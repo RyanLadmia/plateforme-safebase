@@ -7,7 +7,7 @@
           Connexion
         </h1>
         <p class="text-gray-600">
-          Accédez à votre espace sécurisé
+          Accédez � votre espace sécurisé
         </p>
       </div>
       

@@ -182,7 +182,7 @@ jobs:
             # Vérifier que les services sont en cours d'exécution
             docker-compose ps
             
-            echo "✅ Déploiement terminé avec succès!"
+            echo "Déploiement terminé avec succès!"
 
       - name: Health check
         run: |
@@ -191,11 +191,11 @@ jobs:
 
       - name: Notify deployment success
         if: success()
-        run: echo "🚀 Déploiement réussi sur production!"
+        run: echo "Déploiement réussi sur production!"
 
       - name: Notify deployment failure
         if: failure()
-        run: echo "❌ Échec du déploiement!"
+        run: echo "Échec du déploiement!"
 
   # Job 4: Déploiement sur staging (optionnel)
   deploy-staging:
@@ -226,8 +226,8 @@ jobs:
             docker-compose up -d
             docker image prune -af
             docker-compose ps
-            echo "✅ Déploiement staging terminé!"
+            echo "Déploiement staging terminé!"
 
       - name: Notify staging deployment
-        run: echo "🧪 Déploiement réussi sur staging!"
+        run: echo "Déploiement réussi sur staging!"
 

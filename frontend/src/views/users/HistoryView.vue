@@ -353,7 +353,7 @@ const filteredHistory = computed(() => {
   if (filterDatabaseId.value) {
     const selectedDbId = parseInt(filterDatabaseId.value)
     filtered = filtered.filter(item => {
-      // Pour les éléments de base de données, le resource_id correspond à l'ID de la base
+      // Pour les éléments de base de données, le resource_id correspond � l'ID de la base
       if (item.resource_type === 'database') {
         return item.resource_id === selectedDbId
       }

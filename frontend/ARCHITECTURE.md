@@ -1,6 +1,6 @@
 # Architecture Frontend - SafeBase
 
-## 📁 Structure du projet
+## Structure du projet
 
 ```
 src/
@@ -42,7 +42,7 @@ src/
     └── Header.vue         → En-tête global
 ```
 
-## 🏗️ Séparation des responsabilités
+## Séparation des responsabilités
 
 ### 1. **API Layer** (`src/api/`)
 - **Responsabilité** : Appels HTTP purs avec Axios
@@ -91,7 +91,7 @@ export const useSafebaseStore = defineStore('safebase', () => {
 })
 ```
 
-## 🔐 Organisation des vues par rôle
+## Organisation des vues par rôle
 
 ### Pages publiques (`src/views/`)
 - **Accessible par** : Tous (authentifiés ou non)
@@ -113,7 +113,7 @@ export const useSafebaseStore = defineStore('safebase', () => {
   - `AdminDashboardView.vue` - Tableau de bord admin
   - `UsersManagementView.vue` - Gestion des utilisateurs
 
-## 🛣️ Configuration du Router
+## Configuration du Router
 
 Le router utilise des guards de navigation pour contrôler l'accès :
 
@@ -147,7 +147,7 @@ interface RouteMeta {
 }
 ```
 
-## 🔄 Flux de données
+## Flux de données
 
 ```
 Composant Vue
@@ -184,21 +184,21 @@ export async function getDatabases(): Promise<Database[]> {
 }
 ```
 
-## 🎨 Bonnes pratiques
+## Bonnes pratiques
 
-### ✅ À faire
+### À faire
 - **API** : Fonctions pures qui font uniquement des appels HTTP
 - **Services** : Classes avec méthodes de validation et transformation
 - **Stores** : État réactif avec actions qui orchestrent
 - **Composants** : Logique UI uniquement, délèguer au store
 
-### ❌ À éviter
+### À éviter
 - Appels HTTP directs dans les composants
 - Logique métier dans les stores
 - État réactif dans les services
 - Duplication de logique entre couches
 
-## 📦 Technologies utilisées
+## Technologies utilisées
 
 - **Vue 3** : Framework frontend
 - **TypeScript** : Typage statique
@@ -207,15 +207,15 @@ export async function getDatabases(): Promise<Database[]> {
 - **Vue Router** : Routing
 - **Tailwind CSS** : Styling (si configuré)
 
-## 🚀 Prochaines étapes
+## Prochaines étapes
 
-1. ✅ Architecture de base mise en place
-2. ✅ API Layer avec Axios
-3. ✅ Services Layer avec logique métier
-4. ✅ Stores refactorisés
-5. ⏳ Créer les vues utilisateurs
-6. ⏳ Créer les vues admin
-7. ⏳ Mettre à jour le router avec les guards
+1. Architecture de base mise en place
+2. API Layer avec Axios
+3. Services Layer avec logique métier
+4. Stores refactorisés
+5. Créer les vues utilisateurs
+6. Créer les vues admin
+7. Mettre à jour le router avec les guards
 
 ---
 

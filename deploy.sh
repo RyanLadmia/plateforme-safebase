@@ -199,7 +199,7 @@ case $choice in
         ;;
         
     7)
-        log_warning "⚠️  La restauration va écraser les données actuelles!"
+        log_warning "ATTENTION: La restauration va écraser les données actuelles!"
         read -p "Êtes-vous sûr de vouloir continuer? (yes/no): " confirm
         
         if [ "$confirm" != "yes" ]; then
@@ -252,4 +252,3 @@ esac
 
 echo ""
 log_success "Opération terminée avec succès!"
-

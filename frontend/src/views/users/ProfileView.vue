@@ -7,7 +7,7 @@
           to="/user/dashboard" 
           class="text-blue-600 hover:text-blue-800"
         >
-          ← Retour au tableau de bord
+           Retour au tableau de bord
         </router-link>
       </div>
 
@@ -294,20 +294,20 @@ const saveChanges = async () => {
   errorMessage.value = ''
 
   try {
-    // Appeler l'API pour mettre à jour le profil
+    // Appeler l'API pour mettre � jour le profil
     const updatedUser = await updateProfile({
       firstname: profileData.firstname,
       lastname: profileData.lastname,
       email: profileData.email
     })
     
-    successMessage.value = 'Profil mis à jour avec succès !'
+    successMessage.value = 'Profil mis � jour avec succ�s !'
     isEditing.value = false
     
     // Rafraîchir les données utilisateur dans le store
     await authStore.checkAuth()
   } catch (err: any) {
-    errorMessage.value = err.message || 'Erreur lors de la mise à jour du profil'
+    errorMessage.value = err.message || 'Erreur lors de la mise � jour du profil'
   } finally {
     loading.value = false
   }
@@ -332,7 +332,7 @@ const changePasswordHandler = async () => {
   }
 
   if (passwordData.new.length < 8) {
-    passwordError.value = 'Le mot de passe doit contenir au moins 8 caractères'
+    passwordError.value = 'Le mot de passe doit contenir au moins 8 caract�res'
     passwordLoading.value = false
     return
   }
@@ -345,7 +345,7 @@ const changePasswordHandler = async () => {
       confirm_password: passwordData.confirm
     })
     
-    passwordSuccess.value = 'Mot de passe changé avec succès !'
+    passwordSuccess.value = 'Mot de passe changé avec succ�s !'
     
     // Réinitialiser le formulaire
     passwordData.current = ''

@@ -2,7 +2,7 @@
 
 Plateforme de gestion sécurisée de sauvegarde et restauration de bases de données MySQL et PostgreSQL.
 
-## 📋 Table des matières
+## Table des matières
 
 - [Description](#description)
 - [Fonctionnalités](#fonctionnalités)
@@ -17,7 +17,7 @@ Plateforme de gestion sécurisée de sauvegarde et restauration de bases de donn
 - [API](#api)
 - [Dépannage](#dépannage)
 
-## 📝 Description
+## Description
 
 SafeBase est une plateforme complète permettant de :
 - Gérer des configurations de bases de données MySQL et PostgreSQL
@@ -26,39 +26,39 @@ SafeBase est une plateforme complète permettant de :
 - Restaurer des bases de données depuis des sauvegardes
 - Consulter un historique complet de toutes les opérations
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
 ### Gestion des bases de données
-- ✅ Création, modification, suppression de configurations BDD
-- ✅ Support MySQL et PostgreSQL
-- ✅ Chiffrement des mots de passe de connexion
-- ✅ Validation des configurations
+- Création, modification, suppression de configurations BDD
+- Support MySQL et PostgreSQL
+- Chiffrement des mots de passe de connexion
+- Validation des configurations
 
 ### Sauvegardes
-- ✅ Création manuelle de sauvegardes
-- ✅ Compression automatique en ZIP
-- ✅ Téléchargement des sauvegardes
-- ✅ Statuts en temps réel (pending, completed, failed)
-- ✅ Organisation par type de base de données
+- Création manuelle de sauvegardes
+- Compression automatique en ZIP
+- Téléchargement des sauvegardes
+- Statuts en temps réel (pending, completed, failed)
+- Organisation par type de base de données
 
 ### Planification
-- ✅ Planification automatique via expressions CRON
-- ✅ Activation/désactivation de planifications
-- ✅ Support de multiples planifications par base
+- Planification automatique via expressions CRON
+- Activation/désactivation de planifications
+- Support de multiples planifications par base
 
 ### Historique & Audit
-- ✅ Traçabilité complète de toutes les actions
-- ✅ Filtres par type, ressource, date
-- ✅ Export CSV
-- ✅ Isolation multi-utilisateurs
+- Traçabilité complète de toutes les actions
+- Filtres par type, ressource, date
+- Export CSV
+- Isolation multi-utilisateurs
 
 ### Authentification
-- ✅ Inscription et connexion sécurisées
-- ✅ Gestion de sessions JWT
-- ✅ Cookies HTTP-only pour la sécurité
-- ✅ Rôles utilisateur (user, admin)
+- Inscription et connexion sécurisées
+- Gestion de sessions JWT
+- Cookies HTTP-only pour la sécurité
+- Rôles utilisateur (user, admin)
 
-## 🛠️ Technologies
+## Technologies
 
 ### Backend
 - **Go 1.25+** avec Gin Framework
@@ -80,7 +80,7 @@ SafeBase est une plateforme complète permettant de :
 - **Go testing** pour les tests unitaires et d'intégration
 - **Coverage > 90%**
 
-## 📦 Prérequis
+## Prérequis
 
 - **Docker** et **Docker Compose** (recommandé)
 - Ou :
@@ -89,7 +89,7 @@ SafeBase est une plateforme complète permettant de :
   - PostgreSQL 14+
   - MySQL 8+ (optionnel, pour tester les sauvegardes MySQL)
 
-## 🚀 Installation
+## Installation
 
 ### Option 1 : Avec Docker (Recommandé)
 
@@ -125,7 +125,7 @@ cp .env.example .env  # Configurer les variables d'environnement
 npm run dev
 ```
 
-## 🐳 Démarrage avec Docker
+## Démarrage avec Docker
 
 ### Services disponibles
 
@@ -165,7 +165,7 @@ Les deux services supportent le hot-reload :
 - **Backend** : Air détecte les changements et recompile automatiquement
 - **Frontend** : Vite détecte les changements et recharge automatiquement
 
-## ⚙️ Configuration
+## Configuration
 
 ### Backend (.env)
 
@@ -200,17 +200,17 @@ VITE_APP_NAME=SafeBase
 VITE_APP_VERSION=1.0.0
 ```
 
-## 🔒 Sécurité
+## Sécurité
 
 ### Mesures implémentées
 
-- ✅ **Cookies HTTP-only** : Inaccessibles via JavaScript (protection XSS)
-- ✅ **Cookies Secure** : Transmission uniquement via HTTPS en production
-- ✅ **Hachage bcrypt** : Mots de passe avec salt automatique
-- ✅ **JWT sécurisé** : Signature avec clé secrète, expiration 24h
-- ✅ **CORS configuré** : Origines spécifiques, pas de wildcard
-- ✅ **Validation des entrées** : Protection contre l'injection SQL
-- ✅ **Isolation utilisateurs** : Chaque utilisateur ne voit que ses ressources
+- **Cookies HTTP-only** : Inaccessibles via JavaScript (protection XSS)
+- **Cookies Secure** : Transmission uniquement via HTTPS en production
+- **Hachage bcrypt** : Mots de passe avec salt automatique
+- **JWT sécurisé** : Signature avec clé secrète, expiration 24h
+- **CORS configuré** : Origines spécifiques, pas de wildcard
+- **Validation des entrées** : Protection contre l'injection SQL
+- **Isolation utilisateurs** : Chaque utilisateur ne voit que ses ressources
 
 ### Checklist de déploiement en production
 
@@ -224,12 +224,12 @@ VITE_APP_VERSION=1.0.0
 - [ ] Monitoring : Logs de sécurité et alertes
 - [ ] Backups : Sauvegardes chiffrées régulières
 
-**⚠️ Ne JAMAIS stocker :**
-- ❌ Tokens dans localStorage
-- ❌ Mots de passe en clair
-- ❌ Secrets dans le code
+**IMPORTANT - Ne JAMAIS stocker :**
+- Tokens dans localStorage
+- Mots de passe en clair
+- Secrets dans le code
 
-## 🧪 Tests
+## Tests
 
 ### Tests E2E avec Cypress
 
@@ -298,7 +298,7 @@ go test ./tests/integrations/... -v
 go test ./tests/functionals/... -v
 ```
 
-## 📁 Structure du projet
+## Structure du projet
 
 ```
 plateforme-safebase/
@@ -336,7 +336,7 @@ plateforme-safebase/
 └── README.md              # Ce fichier
 ```
 
-## 🔌 API
+## API
 
 ### Authentification
 
@@ -378,7 +378,7 @@ plateforme-safebase/
 - `PUT /api/profile` - Mettre à jour le profil
 - `PUT /api/profile/password` - Changer le mot de passe
 
-## 🔧 Dépannage
+## Dépannage
 
 ### Le backend ne démarre pas
 
@@ -418,13 +418,13 @@ npm cache clean --force
 npm install
 ```
 
-## 📚 Documentation supplémentaire
+## Documentation supplémentaire
 
 - `backend/README.md` - Documentation backend détaillée
 - `frontend/README.md` - Documentation frontend
 - `tests/README.md` - Guide complet des tests E2E
 
-## 🤝 Contribution
+## Contribution
 
 1. Fork le projet
 2. Créer une branche (`git checkout -b feature/nouvelle-fonctionnalite`)
@@ -432,7 +432,7 @@ npm install
 4. Push vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
 5. Ouvrir une Pull Request
 
-## 📄 Licence
+## Licence
 
 [Spécifier la licence]
 

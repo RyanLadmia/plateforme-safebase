@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="text-center mb-12">
         <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-          À propos de SafeBase
+          A propos de SafeBase
         </h1>
         <p class="text-xl text-gray-600 max-w-2xl mx-auto">
           Une solution moderne et sécurisée pour la gestion de vos données
@@ -17,7 +17,7 @@
         <div class="space-y-6">
           <div class="bg-white rounded-xl shadow-lg p-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">
-              🚀 Notre Mission
+              Notre Mission
             </h2>
             <p class="text-gray-600 leading-relaxed">
               SafeBase est une plateforme développée avec les technologies les plus modernes 
@@ -29,7 +29,7 @@
 
           <div class="bg-white rounded-xl shadow-lg p-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">
-              🛡️ Sécurité
+              Sécurité
             </h2>
             <p class="text-gray-600 leading-relaxed">
               Nous utilisons les meilleures pratiques de sécurité : 
@@ -43,7 +43,7 @@
         <!-- Technologies -->
         <div class="bg-white rounded-xl shadow-lg p-8">
           <h2 class="text-2xl font-bold text-gray-800 mb-6">
-            ⚡ Technologies utilisées
+            Technologies utilisées
           </h2>
           
           <div class="space-y-4">
@@ -80,7 +80,7 @@
 
           <div class="mt-8 p-4 bg-gray-50 rounded-lg">
             <p class="text-sm text-gray-600 text-center">
-              Développé avec ❤️ pour l'apprentissage et la démonstration 
+              Développé pour l'apprentissage et la démonstration 
               des bonnes pratiques de développement web moderne.
             </p>
           </div>

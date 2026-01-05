@@ -21,7 +21,7 @@ choco install act-cli
 
 ## Configuration
 
-Créer un fichier `.actrc` à la racine du projet :
+Créer un fichier `.actrc` � la racine du projet :
 
 ```bash
 # .actrc
@@ -85,5 +85,5 @@ git commit -m "feat: nouvelle fonctionnalité"
 git push origin main
 ```
 
-Cela permet de détecter les erreurs avant de les pousser sur GitHub ! 🚀
+Cela permet de détecter les erreurs avant de les pousser sur GitHub ! 
 

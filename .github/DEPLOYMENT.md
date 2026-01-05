@@ -2,14 +2,14 @@
 
 Ce document explique comment configurer le pipeline CI/CD pour SafeBase.
 
-## 📋 Prérequis
+##  Prérequis
 
 1. Un compte Docker Hub
 2. Un serveur de production avec Docker et Docker Compose installés
 3. Accès SSH au serveur de production
 4. Un repository GitHub
 
-## 🔐 Configuration des Secrets GitHub
+##  Configuration des Secrets GitHub
 
 Allez dans `Settings > Secrets and variables > Actions` de votre repository GitHub et ajoutez les secrets suivants :
 
@@ -41,7 +41,7 @@ STAGING_PORT        # Port SSH staging (optionnel)
 STAGING_PATH        # Chemin vers l'application staging
 ```
 
-## 🔑 Génération de la clé SSH
+## � Génération de la clé SSH
 
 Sur votre machine locale :
 
@@ -52,21 +52,21 @@ ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_deploy
 # Copier la clé publique sur le serveur
 ssh-copy-id -i ~/.ssh/github_deploy.pub user@votre-serveur.com
 
-# Afficher la clé privée (à copier dans DEPLOY_SSH_KEY)
+# Afficher la clé privée (� copier dans DEPLOY_SSH_KEY)
 cat ~/.ssh/github_deploy
 ```
 
-⚠️ **Important** : Copiez TOUTE la clé privée, y compris les lignes `-----BEGIN` et `-----END`.
+ **Important** : Copiez TOUTE la clé privée, y compris les lignes `-----BEGIN` et `-----END`.
 
-## 🚀 Workflow de déploiement
+##  Workflow de déploiement
 
-### Branche `develop` → Staging
+### Branche `develop`  Staging
 1. Push sur la branche `develop`
 2. Tests automatiques
 3. Build des images Docker
 4. Déploiement automatique sur staging
 
-### Branche `main` → Production
+### Branche `main`  Production
 1. Push sur la branche `main`
 2. Tests automatiques
 3. Build des images Docker
@@ -76,12 +76,12 @@ cat ~/.ssh/github_deploy
 - Exécute uniquement les tests
 - Pas de build ni de déploiement
 
-## 📦 Préparation du serveur de production
+##  Préparation du serveur de production
 
 ### 1. Installer Docker et Docker Compose
 
 ```bash
-# Mettre à jour le système
+# Mettre � jour le syst�me
 sudo apt update && sudo apt upgrade -y
 
 # Installer Docker
@@ -104,7 +104,7 @@ sudo mkdir -p /opt/safebase
 sudo chown $USER:$USER /opt/safebase
 cd /opt/safebase
 
-# Cloner le repository (première fois)
+# Cloner le repository (premi�re fois)
 git clone https://github.com/votre-username/plateforme-safebase.git .
 ```
 
@@ -238,7 +238,7 @@ docker-compose logs -f
 docker-compose ps
 ```
 
-## 🔍 Vérification et monitoring
+##  Vérification et monitoring
 
 ### Vérifier les logs
 
@@ -266,21 +266,21 @@ docker-compose restart backend
 docker-compose restart frontend
 ```
 
-## 🔄 Rollback en cas de problème
+##  Rollback en cas de probl�me
 
-Si un déploiement échoue, vous pouvez revenir à la version précédente :
+Si un déploiement échoue, vous pouvez revenir � la version précédente :
 
 ```bash
 # Voir les images disponibles
 docker images
 
-# Revenir à une version spécifique
+# Revenir � une version spécifique
 docker-compose down
 docker tag votre-username/safebase-backend:sha-abc123 votre-username/safebase-backend:latest
 docker-compose up -d
 ```
 
-## 🛡️ Sécurité
+##  Sécurité
 
 ### Pare-feu
 
@@ -300,14 +300,14 @@ sudo ufw enable
 
 Utilisez Nginx Proxy Manager ou Traefik pour gérer automatiquement les certificats SSL.
 
-## 📊 Monitoring (optionnel)
+##  Monitoring (optionnel)
 
-Le projet inclut déjà Prometheus et Grafana. Pour y accéder :
+Le projet inclut déj� Prometheus et Grafana. Pour y accéder :
 
 - Prometheus: `http://votre-serveur:9090`
 - Grafana: `http://votre-serveur:3001`
 
-## 🆘 Dépannage
+## � Dépannage
 
 ### Les conteneurs ne démarrent pas
 
@@ -322,10 +322,10 @@ df -h
 docker system prune -a
 ```
 
-### Problème de connexion à la base de données
+### Probl�me de connexion � la base de données
 
 ```bash
-# Vérifier que les conteneurs sont sur le même réseau
+# Vérifier que les conteneurs sont sur le m�me réseau
 docker network ls
 docker network inspect safebase-network
 
@@ -336,21 +336,21 @@ docker-compose exec backend ping postgres
 ### Les images ne se téléchargent pas
 
 ```bash
-# Vérifier la connexion à Docker Hub
+# Vérifier la connexion � Docker Hub
 docker login
 
 # Pull manuel
 docker pull votre-username/safebase-backend:latest
 ```
 
-## 📝 Notes
+##  Notes
 
-- Le pipeline s'exécute automatiquement à chaque push sur `main` ou `develop`
+- Le pipeline s'exécute automatiquement � chaque push sur `main` ou `develop`
 - Les images Docker sont multi-architecture (amd64 et arm64)
-- Les anciennes images sont automatiquement nettoyées après déploiement
+- Les anciennes images sont automatiquement nettoyées apr�s déploiement
 - Un backup de `.env` est créé avant chaque déploiement
 
-## 🔗 Ressources
+##  Ressources
 
 - [Documentation Docker](https://docs.docker.com/)
 - [Documentation GitHub Actions](https://docs.github.com/en/actions)

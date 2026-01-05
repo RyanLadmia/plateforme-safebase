@@ -1,12 +1,12 @@
 # Tests End-to-End (E2E) avec Cypress
 
-## 📋 Vue d'ensemble
+## Vue d'ensemble
 
 Cette suite de tests E2E couvre **au moins 90%** de la plateforme SafeBase, testant tous les flux utilisateur critiques de bout en bout.
 
-**⚠️ IMPORTANT : Cette configuration supporte Docker et le développement local !**
+**IMPORTANT : Cette configuration supporte Docker et le développement local !**
 
-## 🐳 Modes d'exécution
+## Modes d'exécution
 
 ### Mode Docker (RECOMMANDÉ - par défaut)
 - Frontend sur port **3000**
@@ -18,7 +18,7 @@ Cette suite de tests E2E couvre **au moins 90%** de la plateforme SafeBase, test
 - Backend sur port **8080**
 - Serveurs lancés manuellement
 
-## 🚀 Installation
+## Installation
 
 ### Avec Docker (RECOMMANDÉ)
 
@@ -53,7 +53,7 @@ CYPRESS_IS_DOCKER=false
 EOF
 ```
 
-## 🏃 Exécution des tests
+## Exécution des tests
 
 ### Avec Docker
 
@@ -110,7 +110,7 @@ npm run cy:run:firefox
 npm run cy:run:edge
 ```
 
-## 📁 Structure des tests
+## Structure des tests
 
 ```
 tests/
@@ -135,73 +135,73 @@ tests/
 └── README.md                           # Ce fichier
 ```
 
-## 🎯 Couverture des tests
+## Couverture des tests
 
 ### 1. Authentification (15%)
-- ✅ Inscription utilisateur
-- ✅ Connexion/Déconnexion
-- ✅ Validation des mots de passe
-- ✅ Gestion des sessions
-- ✅ Gestion des erreurs
+- Inscription utilisateur
+- Connexion/Déconnexion
+- Validation des mots de passe
+- Gestion des sessions
+- Gestion des erreurs
 
 ### 2. Gestion des bases de données (25%)
-- ✅ CRUD complet (Create, Read, Update, Delete)
-- ✅ Support MySQL et PostgreSQL
-- ✅ Validation des champs
-- ✅ Chiffrement des mots de passe
-- ✅ Filtres et recherche
-- ✅ Actions multiples
+- CRUD complet (Create, Read, Update, Delete)
+- Support MySQL et PostgreSQL
+- Validation des champs
+- Chiffrement des mots de passe
+- Filtres et recherche
+- Actions multiples
 
 ### 3. Gestion des sauvegardes (20%)
-- ✅ Création manuelle de sauvegardes
-- ✅ Téléchargement de sauvegardes
-- ✅ Restauration de sauvegardes
-- ✅ Suppression de sauvegardes
-- ✅ Filtres par date, statut, BDD
-- ✅ Opérations en masse
-- ✅ Pagination
+- Création manuelle de sauvegardes
+- Téléchargement de sauvegardes
+- Restauration de sauvegardes
+- Suppression de sauvegardes
+- Filtres par date, statut, BDD
+- Opérations en masse
+- Pagination
 
 ### 4. Planification (15%)
-- ✅ Création de planifications
-- ✅ Validation des expressions CRON
-- ✅ Activation/Désactivation
-- ✅ Modification et suppression
-- ✅ Historique d'exécution
-- ✅ Planifications multiples
+- Création de planifications
+- Validation des expressions CRON
+- Activation/Désactivation
+- Modification et suppression
+- Historique d'exécution
+- Planifications multiples
 
 ### 5. Historique & Audit (10%)
-- ✅ Traçabilité complète des actions
-- ✅ Filtres par type, ressource, date
-- ✅ Recherche par mots-clés
-- ✅ Export CSV
-- ✅ Isolation multi-utilisateurs
-- ✅ Pagination
+- Traçabilité complète des actions
+- Filtres par type, ressource, date
+- Recherche par mots-clés
+- Export CSV
+- Isolation multi-utilisateurs
+- Pagination
 
 ### 6. Profil utilisateur (10%)
-- ✅ Affichage du profil
-- ✅ Modification des informations
-- ✅ Changement de mot de passe
-- ✅ Statistiques utilisateur
-- ✅ Préférences et paramètres
-- ✅ Sécurité du compte
+- Affichage du profil
+- Modification des informations
+- Changement de mot de passe
+- Statistiques utilisateur
+- Préférences et paramètres
+- Sécurité du compte
 
 ### 7. Tableau de bord (5%)
-- ✅ Affichage des statistiques
-- ✅ Activité récente
-- ✅ Actions rapides
-- ✅ Planifications à venir
-- ✅ Notifications
-- ✅ Navigation
+- Affichage des statistiques
+- Activité récente
+- Actions rapides
+- Planifications à venir
+- Notifications
+- Navigation
 
 ### 8. Flux complets (10%)
-- ✅ Parcours complet nouvel utilisateur
-- ✅ Workflow de sauvegarde
-- ✅ Gestion multi-bases
-- ✅ Collaboration multi-utilisateurs
-- ✅ Récupération d'erreurs
-- ✅ Export de données
+- Parcours complet nouvel utilisateur
+- Workflow de sauvegarde
+- Gestion multi-bases
+- Collaboration multi-utilisateurs
+- Récupération d'erreurs
+- Export de données
 
-## 🛠️ Commandes personnalisées
+## Commandes personnalisées
 
 ### `cy.login(email, password)`
 Authentifie un utilisateur.
@@ -255,14 +255,14 @@ Nettoie toutes les données de test.
 cy.deleteAllTestData()
 ```
 
-## 📊 Rapports et résultats
+## Rapports et résultats
 
 Les résultats des tests sont sauvegardés dans :
 - **Vidéos** : `e2E/videos/`
 - **Screenshots** : `e2E/screenshots/`
 - **Screenshots d'échecs** : `e2E/screenshots/failed/`
 
-## ⚙️ Configuration
+## Configuration
 
 ### Variables d'environnement
 
@@ -278,7 +278,7 @@ env: {
 
 Pour modifier la configuration, éditez `cypress.config.ts`.
 
-## 🔧 Prérequis
+## Prérequis
 
 Avant d'exécuter les tests :
 
@@ -296,7 +296,7 @@ Avant d'exécuter les tests :
 
 3. **Base de données** : PostgreSQL doit être accessible
 
-## 🐛 Débogage
+## Débogage
 
 ### Activer les logs détaillés
 ```bash
@@ -313,7 +313,7 @@ npx cypress run --spec "e2E/01-authentication.cy.ts"
 npx cypress run --spec "e2E/**/*authentication*.cy.ts"
 ```
 
-## 📝 Bonnes pratiques
+## Bonnes pratiques
 
 1. **Isolation des tests** : Chaque test doit être indépendant
 2. **Nettoyage** : Utilisez `afterEach()` pour nettoyer les données
@@ -321,35 +321,35 @@ npx cypress run --spec "e2E/**/*authentication*.cy.ts"
 4. **Attentes** : Utilisez des timeouts appropriés
 5. **Fixtures** : Utilisez des fixtures pour les données de test
 
-## 🚨 Gestion des erreurs
+## Gestion des erreurs
 
 Les tests gèrent automatiquement :
-- ❌ Erreurs réseau
-- ❌ Timeouts
-- ❌ Erreurs de validation
-- ❌ Erreurs serveur (500)
-- ❌ Données invalides
+- Erreurs réseau
+- Timeouts
+- Erreurs de validation
+- Erreurs serveur (500)
+- Données invalides
 
-## 📈 Métriques de qualité
+## Métriques de qualité
 
 - **Couverture** : >90% du code frontend
 - **Fiabilité** : Tests réexécutés 2 fois en cas d'échec (CI)
 - **Performance** : Chargement des pages <3s
 - **Accessibilité** : Tests A11Y inclus
 
-## 🔄 Intégration CI/CD
+## Intégration CI/CD
 
 Ces tests sont intégrés dans le pipeline CI/CD et s'exécutent automatiquement sur chaque push.
 
 Voir `.github/workflows/ci-cd.yml` pour la configuration.
 
-## 📚 Documentation
+## Documentation
 
 - [Cypress Documentation](https://docs.cypress.io)
 - [Best Practices](https://docs.cypress.io/guides/references/best-practices)
 - [TypeScript Support](https://docs.cypress.io/guides/tooling/typescript-support)
 
-## 🤝 Contribution
+## Contribution
 
 Pour ajouter de nouveaux tests :
 
@@ -359,7 +359,7 @@ Pour ajouter de nouveaux tests :
 4. Documentez les nouveaux tests
 5. Assurez-vous du nettoyage avec `afterEach()`
 
-## ⚡ Performance
+## Performance
 
 Pour optimiser les performances :
 - Utilisez `cy.session()` pour la réutilisation des sessions
@@ -367,7 +367,7 @@ Pour optimiser les performances :
 - Utilisez des interceptions pour mocker les appels API lents
 - Parallélisez les tests en CI
 
-## 📞 Support
+## Support
 
 Pour toute question ou problème, consultez la documentation ou créez une issue.
 
@@ -376,4 +376,3 @@ Pour toute question ou problème, consultez la documentation ou créez une issue
 **Dernière mise à jour** : Janvier 2026
 **Version** : 1.0.0
 **Couverture** : 90%+
-
