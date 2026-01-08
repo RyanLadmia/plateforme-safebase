@@ -21,7 +21,7 @@ choco install act-cli
 
 ## Configuration
 
-Créer un fichier `.actrc` � la racine du projet :
+Créer un fichier `.actrc` à la racine du projet :
 
 ```bash
 # .actrc

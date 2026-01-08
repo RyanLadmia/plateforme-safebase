@@ -147,7 +147,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: https://votre-domaine.com
+      url: https://safebase-r.fr
     
     steps:
       - name: Checkout code
