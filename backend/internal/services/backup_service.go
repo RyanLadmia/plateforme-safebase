@@ -124,11 +124,13 @@ func (s *BackupService) getMySQLDumpPaths() []string {
 		}
 	case "linux":
 		paths = []string{
-			"/usr/bin/mysqldump",             // Ubuntu/Debian default
+			"/usr/bin/mysqldump",             // Ubuntu/Debian default (priorité sur mariadb-dump)
 			"/usr/local/bin/mysqldump",       // Custom install
 			"/usr/local/mysql/bin/mysqldump", // MySQL tar.gz install
 			"/opt/mysql/bin/mysqldump",       // Some Linux distributions
 			"mysqldump",                      // System PATH
+			// Note: mariadb-dump n'est pas inclus car il interroge generation_expression
+			// ce qui cause des erreurs avec MariaDB 5.5 et MySQL 5.6
 		}
 	case "windows":
 		paths = []string{
@@ -395,6 +397,7 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, f
 		"--single-transaction",
 		"--routines",
 		"--triggers",
+		"--no-tablespaces", // Évite les erreurs de permissions sur les tablespaces
 	}
 
 	// Connection and SSL configuration
@@ -469,6 +472,31 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, f
 		fmt.Printf("[BACKUP] mysqldump failed: %v\n", err)
 		fmt.Printf("[BACKUP] stderr: %s\n", stderrStr)
 
+		// Build base args for retry attempts (without SSL options)
+		buildBaseArgs := func() []string {
+			baseArgs := []string{
+				"-u", database.Username,
+				"--single-transaction",
+				"--routines",
+				"--triggers",
+				"--no-tablespaces", // Évite les erreurs de permissions sur les tablespaces
+			}
+
+			if isMAMP {
+				socketPath := "/Applications/MAMP/tmp/mysql/mysql.sock"
+				if _, err := os.Stat(socketPath); err == nil {
+					baseArgs = append(baseArgs, "--socket="+socketPath)
+				} else {
+					baseArgs = append(baseArgs, "-h", database.Host, "-P", database.Port)
+				}
+			} else {
+				baseArgs = append(baseArgs, "-h", database.Host, "-P", database.Port)
+			}
+
+			baseArgs = append(baseArgs, database.DbName)
+			return baseArgs
+		}
+
 		// If SSL/connect options not recognized, try without SSL options
 		if strings.Contains(stderrStr, "unknown variable") &&
 			(strings.Contains(stderrStr, "ssl-mode") ||
@@ -478,20 +506,7 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, f
 			fmt.Printf("[BACKUP] SSL options not supported, retrying with basic options...\n")
 
 			// Retry with basic args (no SSL options)
-			baseArgs := []string{
-				"-u", database.Username,
-				"--single-transaction",
-				"--routines",
-				"--triggers",
-			}
-
-			if isRemote || isMAMP {
-				baseArgs = append(baseArgs, "-h", database.Host, "-P", database.Port)
-			} else {
-				baseArgs = append(baseArgs, "-h", database.Host, "-P", database.Port)
-			}
-
-			baseArgs = append(baseArgs, database.DbName)
+			baseArgs := buildBaseArgs()
 
 			cmd = exec.CommandContext(context.Background(), mysqldumpPath, baseArgs...)
 			cmd.Env = env
@@ -507,11 +522,17 @@ func (s *BackupService) dumpMySQL(database *models.Database, outputDir string, f
 
 			fmt.Printf("[BACKUP] Retry command args: %v\n", baseArgs)
 			if err2 := cmd.Run(); err2 != nil {
+				stderr2Str := stderr2.String()
 				fmt.Printf("[BACKUP] mysqldump retry failed: %v\n", err2)
-				fmt.Printf("[BACKUP] stderr: %s\n", stderr2.String())
+				fmt.Printf("[BACKUP] stderr: %s\n", stderr2Str)
 				os.Remove(dumpFile)
-				return "", fmt.Errorf("erreur lors de l'exécution de mysqldump (même sans SSL): %v, stderr: %s", err2, stderr2.String())
+				return "", fmt.Errorf("erreur lors de l'exécution de mysqldump (même sans SSL): %v, stderr: %s", err2, stderr2Str)
 			}
+		} else if strings.Contains(stderrStr, "Unknown column 'generation_expression'") {
+			// If we get generation_expression error, it means the client is too recent for the server (e.g., MariaDB 5.5)
+			// This should be resolved by using an older mysql-client version in Dockerfile (Alpine v3.12)
+			os.Remove(dumpFile)
+			return "", fmt.Errorf("incompatibilité de version client/serveur MySQL: le serveur est MariaDB 5.5 ou MySQL 5.6 (trop ancien). Le client mysqldump doit être downgraded à Alpine v3.12 (MariaDB 10.4). Veuillez rebuilder le conteneur Docker")
 		} else {
 			os.Remove(dumpFile)
 			return "", fmt.Errorf("erreur lors de l'exécution de mysqldump: %v, stderr: %s", err, stderrStr)
@@ -551,12 +572,23 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 	}
 	fmt.Printf("[BACKUP] Using pg_dump at: %s\n", pgDumpPath)
 
-	// Set environment variable for password
+	// Set environment variables for password and SSL mode
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("PGPASSWORD=%s", database.Password))
 
-	// Try pg_dump with SSL options first, fallback to basic options if SSL not supported
-	baseArgs := []string{
+	// Configure SSL mode via environment variable (not command line option)
+	if isRemote {
+		// For remote connections (Neon, Supabase, etc.), require SSL
+		fmt.Printf("[BACKUP] Configuring SSL mode 'require' for remote PostgreSQL connection\n")
+		env = append(env, "PGSSLMODE=require")
+	} else {
+		// For local connections, prefer SSL but allow fallback
+		fmt.Printf("[BACKUP] Configuring SSL mode 'prefer' for local PostgreSQL connection\n")
+		env = append(env, "PGSSLMODE=prefer")
+	}
+
+	// Build pg_dump arguments (no SSL options in args, use env vars instead)
+	args := []string{
 		"-h", database.Host,
 		"-p", database.Port,
 		"-U", database.Username,
@@ -569,20 +601,10 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 		"-f", dumpFile,
 	}
 
-	var finalArgs []string
-	if isRemote {
-		// Try with SSL options for remote connections
-		fmt.Printf("[BACKUP] Attempting SSL for remote PostgreSQL connection\n")
-		finalArgs = append(baseArgs, "--sslmode=require")
-	} else {
-		// For local connections, try SSL first
-		finalArgs = append(baseArgs, "--sslmode=prefer")
-	}
-
 	// Set timeout for the command (30 minutes max for large databases)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, pgDumpPath, finalArgs...)
+	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 
 	cmd.Env = env
 
@@ -590,7 +612,13 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	fmt.Printf("[BACKUP] Command args: %v\n", finalArgs)
+	fmt.Printf("[BACKUP] Command args: %v\n", args)
+	fmt.Printf("[BACKUP] Environment: PGSSLMODE=%s\n", func() string {
+		if isRemote {
+			return "require"
+		}
+		return "prefer"
+	}())
 	fmt.Printf("[BACKUP] Starting pg_dump execution...\n")
 
 	err = cmd.Run()
@@ -599,19 +627,22 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 		fmt.Printf("[BACKUP] pg_dump failed: %v\n", err)
 		fmt.Printf("[BACKUP] stderr: %s\n", stderrStr)
 
-		// If SSL option not recognized, try without SSL
-		if strings.Contains(stderrStr, "unrecognized option") && strings.Contains(stderrStr, "sslmode") {
-			fmt.Printf("[BACKUP] SSL options not supported, retrying without SSL...\n")
+		// If SSL connection failed for local connections, try without SSL
+		if !isRemote && (strings.Contains(stderrStr, "SSL") || strings.Contains(stderrStr, "ssl")) {
+			fmt.Printf("[BACKUP] SSL connection failed for local connection, retrying with PGSSLMODE=disable...\n")
 
-			// Retry with basic args (no SSL options)
-			finalArgs = baseArgs
-			cmd = exec.CommandContext(context.Background(), pgDumpPath, finalArgs...)
-			cmd.Env = env
+			// Retry without SSL for local connections
+			envNoSSL := os.Environ()
+			envNoSSL = append(envNoSSL, fmt.Sprintf("PGPASSWORD=%s", database.Password))
+			envNoSSL = append(envNoSSL, "PGSSLMODE=disable")
+
+			cmd = exec.CommandContext(context.Background(), pgDumpPath, args...)
+			cmd.Env = envNoSSL
 
 			var stderr2 bytes.Buffer
 			cmd.Stderr = &stderr2
 
-			fmt.Printf("[BACKUP] Retry command args: %v\n", finalArgs)
+			fmt.Printf("[BACKUP] Retry with PGSSLMODE=disable\n")
 			err2 := cmd.Run()
 			if err2 != nil {
 				fmt.Printf("[BACKUP] pg_dump retry failed: %v\n", err2)

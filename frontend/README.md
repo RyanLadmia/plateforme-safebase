@@ -16,20 +16,20 @@ Interface utilisateur pour la plateforme SafeBase de sauvegarde et restauration 
 
 ```
 frontend/
-├── src/
-│   ├── assets/          # Images, styles, ressources
-│   ├── components/      # Composants réutilisables
-│   │   ├── BackupList.vue
-│   │   ├── RestoreForm.vue
-│   │   └── AlertBox.vue
-│   ├── pages/          # Pages principales
-│   │   ├── Dashboard.vue
-│   │   └── History.vue
-│   ├── router/         # Configuration des routes
-│   ├── stores/         # Gestion d'état avec Pinia
-│   └── views/          # Vues principales
-├── public/             # Ressources statiques
-└── dist/               # Build de production
+ src/
+�    assets/          # Images, styles, ressources
+�    components/      # Composants réutilisables
+�   �    BackupList.vue
+�   �    RestoreForm.vue
+�   �    AlertBox.vue
+�    pages/          # Pages principales
+�   �    Dashboard.vue
+�   �    History.vue
+�    router/         # Configuration des routes
+�    stores/         # Gestion d'état avec Pinia
+�    views/          # Vues principales
+ public/             # Ressources statiques
+ dist/               # Build de production
 ```
 
 ## Installation
@@ -61,7 +61,7 @@ Tailwind CSS est configuré pour scanner tous les fichiers Vue, JS, TS dans le d
 
 ## API Backend
 
-Le frontend communique avec l'API Go via des requêtes HTTP REST :
+Le frontend communique avec l'API Go via des requ�tes HTTP REST :
 
 - `GET /api/databases` - Liste des bases de données
 - `POST /api/backup` - Lancer une sauvegarde
@@ -78,4 +78,4 @@ Le frontend communique avec l'API Go via des requêtes HTTP REST :
 
 ## Build et déploiement
 
-Le build génère des fichiers statiques optimisés dans le dossier `dist/` qui peuvent être servis par n'importe quel serveur web ou intégrés dans un conteneur Docker.
+Le build gén�re des fichiers statiques optimisés dans le dossier `dist/` qui peuvent �tre servis par n'importe quel serveur web ou intégrés dans un conteneur Docker.

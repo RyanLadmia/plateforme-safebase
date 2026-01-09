@@ -1,0 +1,35 @@
+{
+  "name": "safebase-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-End tests for SafeBase platform with Cypress",
+  "private": true,
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:run:chrome": "cypress run --browser chrome",
+    "cy:run:firefox": "cypress run --browser firefox",
+    "cy:run:edge": "cypress run --browser edge",
+    "cy:run:headless": "cypress run --headless",
+    "test": "cypress run",
+    "test:ci": "cypress run --headless --browser chrome",
+    "test:docker": "CYPRESS_BASE_URL=http://localhost:3000 CYPRESS_API_URL=http://localhost:8080/api cypress run",
+    "test:local": "CYPRESS_BASE_URL=http://localhost:5173 CYPRESS_API_URL=http://localhost:8080/api cypress run",
+    "cy:open:docker": "CYPRESS_BASE_URL=http://localhost:3000 CYPRESS_API_URL=http://localhost:8080/api cypress open",
+    "cy:open:local": "CYPRESS_BASE_URL=http://localhost:5173 CYPRESS_API_URL=http://localhost:8080/api cypress open"
+  },
+  "keywords": [
+    "cypress",
+    "e2e",
+    "testing",
+    "safebase"
+  ],
+  "author": "SafeBase Team",
+  "license": "MIT",
+  "devDependencies": {
+    "cypress": "^13.6.2",
+    "@cypress/grep": "^4.0.1",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6"
+  }
+}
+

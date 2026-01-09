@@ -68,7 +68,7 @@ func main() {
 	// Initialize backup service with backup directory
 	backupDir := filepath.Join(".", "db", "backups")
 	databaseService := services.NewDatabaseService(databaseRepo, backupRepo, restoreRepo, scheduleRepo, nil) // backupService will be set later
-	userService := services.NewUserService(userRepo, roleRepo)
+	userService := services.NewUserService(userRepo, roleRepo, actionHistoryRepo)
 	backupService := services.NewBackupService(backupRepo, databaseService, userService, backupDir)
 	// Set backupService reference in databaseService to enable cascade deletion
 	databaseService.SetBackupService(backupService)
@@ -119,8 +119,10 @@ func main() {
 	backupHandler := handlers.NewBackupHandler(backupService)
 	scheduleHandler := handlers.NewScheduleHandler(scheduleService)
 	userHandler := handlers.NewUserHandler(userService)
+	profileHandler := handlers.NewProfileHandler(userService, authService)
 	restoreHandler := handlers.NewRestoreHandler(restoreService)
 	actionHistoryHandler := handlers.NewActionHistoryHandler(actionHistoryService)
+	testHandler := handlers.NewTestHandler(userRepo)
 
 	// Initialize middleware
 	authMiddleware := middlewares.NewAuthMiddleware(cfg.JWT_SECRET)
@@ -138,6 +140,15 @@ func main() {
 		c.JSON(200, gin.H{"message": "Safebase API is running!"})
 	})
 
+	// Health check endpoint for monitoring and CI/CD
+	server.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "healthy",
+			"service": "safebase-api",
+			"version": "1.0.0",
+		})
+	})
+
 	// Integration of authentication routes (/auth/register, /auth/login, /auth/logout)
 	routes.AuthRoutes(server, authHandler, cfg.JWT_SECRET)
 
@@ -147,7 +158,11 @@ func main() {
 	routes.SetupScheduleRoutes(server, scheduleHandler, authMiddleware)
 	routes.SetupRestoreRoutes(server, restoreHandler, authMiddleware)
 	routes.UserRoutes(server, userHandler, authMiddleware)
+	routes.ProfileRoutes(server, profileHandler, authMiddleware)
 	routes.SetupActionHistoryRoutes(server, actionHistoryHandler, authMiddleware)
+
+	// Test routes (only in non-production)
+	routes.TestRoutes(server, testHandler)
 
 	// Initialize worker pool for background tasks
 	workerPool := utils.NewWorkerPool(5) // 5 workers

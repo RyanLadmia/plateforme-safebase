@@ -7,7 +7,7 @@
           to="/user/dashboard" 
           class="text-blue-600 hover:text-blue-800"
         >
-          ← Retour au tableau de bord
+           Retour au tableau de bord
         </router-link>
       </div>
 
@@ -188,7 +188,7 @@
 
           <div class="mt-6">
             <button 
-              @click="changePassword"
+              @click="changePasswordHandler"
               :disabled="passwordLoading"
               class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
             >
@@ -237,6 +237,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import { useSafebaseStore } from '@/stores/safebase'
+import { updateProfile, changePassword } from '@/api/profile_api'
 
 const authStore = useAuthStore()
 const safebaseStore = useSafebaseStore()
@@ -293,25 +294,26 @@ const saveChanges = async () => {
   errorMessage.value = ''
 
   try {
-    // TODO: Implémenter l'endpoint de mise à jour du profil côté backend
-    // await userApi.updateProfile(profileData)
+    // Appeler l'API pour mettre � jour le profil
+    const updatedUser = await updateProfile({
+      firstname: profileData.firstname,
+      lastname: profileData.lastname,
+      email: profileData.email
+    })
     
-    // Simulation pour l'instant
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    successMessage.value = 'Profil mis à jour avec succès !'
+    successMessage.value = 'Profil mis � jour avec succ�s !'
     isEditing.value = false
     
-    // TODO: Rafraîchir les données utilisateur
-    // await authStore.checkAuth()
+    // Rafraîchir les données utilisateur dans le store
+    await authStore.checkAuth()
   } catch (err: any) {
-    errorMessage.value = err.message || 'Erreur lors de la mise à jour du profil'
+    errorMessage.value = err.message || 'Erreur lors de la mise � jour du profil'
   } finally {
     loading.value = false
   }
 }
 
-const changePassword = async () => {
+const changePasswordHandler = async () => {
   passwordLoading.value = true
   passwordSuccess.value = ''
   passwordError.value = ''
@@ -330,19 +332,20 @@ const changePassword = async () => {
   }
 
   if (passwordData.new.length < 8) {
-    passwordError.value = 'Le mot de passe doit contenir au moins 8 caractères'
+    passwordError.value = 'Le mot de passe doit contenir au moins 8 caract�res'
     passwordLoading.value = false
     return
   }
 
   try {
-    // TODO: Implémenter l'endpoint de changement de mot de passe côté backend
-    // await userApi.changePassword(passwordData)
+    // Appeler l'API pour changer le mot de passe
+    await changePassword({
+      current_password: passwordData.current,
+      new_password: passwordData.new,
+      confirm_password: passwordData.confirm
+    })
     
-    // Simulation pour l'instant
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    passwordSuccess.value = 'Mot de passe changé avec succès !'
+    passwordSuccess.value = 'Mot de passe changé avec succ�s !'
     
     // Réinitialiser le formulaire
     passwordData.current = ''

@@ -8,42 +8,63 @@
 
       <!-- Filters -->
       <div class="bg-white rounded-lg shadow p-4 mb-6">
-        <div class="flex flex-wrap gap-2 sm:gap-4">
-          <button
-            @click="activeFilter = 'all'"
-            :class="activeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Toutes les activités ({{ totalActivities }})
-          </button>
-          <button
-            @click="activeFilter = 'database'"
-            :class="activeFilter === 'database' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Bases de données ({{ databaseActivities }})
-          </button>
-          <button
-            @click="activeFilter = 'backup'"
-            :class="activeFilter === 'backup' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Sauvegardes ({{ backupActivities }})
-          </button>
-          <button
-            @click="activeFilter = 'schedule'"
-            :class="activeFilter === 'schedule' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Planifications ({{ scheduleActivities }})
-          </button>
-          <button
-            @click="activeFilter = 'restore'"
-            :class="activeFilter === 'restore' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Restaurations ({{ restoreActivities }})
-          </button>
+        <div class="flex flex-wrap justify-between items-center gap-4">
+          <!-- Activity type filters -->
+          <div class="flex flex-wrap gap-2 sm:gap-4">
+            <button
+              @click="activeFilter = 'all'"
+              :class="activeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Toutes les activités ({{ totalActivities }})
+            </button>
+            <button
+              @click="activeFilter = 'database'"
+              :class="activeFilter === 'database' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Bases de données ({{ databaseActivities }})
+            </button>
+            <button
+              @click="activeFilter = 'backup'"
+              :class="activeFilter === 'backup' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Sauvegardes ({{ backupActivities }})
+            </button>
+            <button
+              @click="activeFilter = 'schedule'"
+              :class="activeFilter === 'schedule' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Planifications ({{ scheduleActivities }})
+            </button>
+            <button
+              @click="activeFilter = 'restore'"
+              :class="activeFilter === 'restore' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-3 py-2 sm:px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Restaurations ({{ restoreActivities }})
+            </button>
+          </div>
+
+          <!-- Database filter -->
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-700">Base de données:</label>
+            <select 
+              v-model="filterDatabaseId" 
+              class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Toutes les bases</option>
+              <option 
+                v-for="db in databases" 
+                :key="db.id" 
+                :value="db.id"
+              >
+                {{ db.name }} ({{ db.type }})
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -298,8 +319,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useSafebaseStore } from '@/stores/safebase'
 import type { ActivityType, HistoryItem, HistoryResponse } from '@/types/history'
 import { historyService } from '@/services/history_service'
+
+// Composables
+const safebaseStore = useSafebaseStore()
+const { databases, backups } = storeToRefs(safebaseStore)
 
 // State
 const loading = ref(false)
@@ -316,10 +343,38 @@ const totalByType = ref<Record<ActivityType, number>>({
   schedule: 0,
   restore: 0
 })
+const filterDatabaseId = ref<string>('')
 
 // Computed
 const filteredHistory = computed(() => {
-  return history.value
+  let filtered = history.value
+
+  // Appliquer le filtre par base de données
+  if (filterDatabaseId.value) {
+    const selectedDbId = parseInt(filterDatabaseId.value)
+    filtered = filtered.filter(item => {
+      // Pour les éléments de base de données, le resource_id correspond � l'ID de la base
+      if (item.resource_type === 'database') {
+        return item.resource_id === selectedDbId
+      }
+
+      // Pour les autres types, vérifier dans les métadonnées
+      if (item.metadata?.database_id) {
+        return item.metadata.database_id === selectedDbId
+      }
+
+      // Essayer de trouver l'ID de base de données dans d'autres champs de métadonnées
+      if (item.metadata && item.metadata.database_name) {
+        // Chercher la base de données correspondante par nom
+        const db = databases.value.find(d => d.name === item.metadata!.database_name)
+        return db?.id === selectedDbId
+      }
+
+      return false
+    })
+  }
+
+  return filtered
 })
 
 const totalActivities = computed(() => totalByType.value.all)
@@ -385,7 +440,7 @@ const getDatabaseContent = (item: HistoryItem) => {
 }
 
 const getBackupContent = (item: HistoryItem) => {
-  return historyService.getBackupContent(item)
+  return historyService.getBackupContent(item, backups.value)
 }
 
 const getRestoreContent = (item: HistoryItem) => {
@@ -456,8 +511,15 @@ watch(currentPage, () => {
   loadHistory()
 })
 
+watch(filterDatabaseId, () => {
+  currentPage.value = 1
+  loadHistory()
+})
+
 // Lifecycle
 onMounted(async () => {
+  await safebaseStore.fetchDatabases()
+  await safebaseStore.fetchBackups()
   await loadTotals()
   await loadHistory()
 })

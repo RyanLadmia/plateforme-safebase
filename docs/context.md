@@ -8,15 +8,15 @@ API REST pour sauvegarder des bases de données
 
 - **Présentation globale :**
     
-    SafeBase vise à développer une solution complète de gestion de sauvegarde et de restauration de base de données sous forme d'une API REST.
+    SafeBase vise � développer une solution compl�te de gestion de sauvegarde et de restauration de base de données sous forme d'une API REST.
     
 - **Pourquoi ce projet :**
     
-    Pour permettre à des utilisateurs, des applications ou des entreprises de sauvegarder et restaurer leur base de données de manière efficace rapide et sécurisée en utilisant un outils de source externe.
+    Pour permettre � des utilisateurs, des applications ou des entreprises de sauvegarder et restaurer leur base de données de mani�re efficace rapide et sécurisée en utilisant un outils de source externe.
     
 - **Objectifs :**
     
-    Offrir la possibilité à travers une interface intuitive et un système bien penser de gérer sa base de données et façon indépendante et optimale sans craindre de perdre ses données et de les réemployer facilement.
+    Offrir la possibilité � travers une interface intuitive et un syst�me bien penser de gérer sa base de données et fa�on indépendante et optimale sans craindre de perdre ses données et de les réemployer facilement.
     
 - **MVP (Minimum Viable Product) :**
     - sauvegarde des données
@@ -32,9 +32,9 @@ API REST pour sauvegarder des bases de données
 
 ### II - Cahier des charges
 
-La solution **SafeBase** s'adresse à plusieurs catégories de profils :
+La solution **SafeBase** s'adresse � plusieurs catégories de profils :
 
-- **Entreprises** : PME, startups ou grands groupes qui gèrent des bases de données critiques (CRM, ERP, e-commerce).
+- **Entreprises** : PME, startups ou grands groupes qui g�rent des bases de données critiques (CRM, ERP, e-commerce).
 - **Organisations** : associations, ONG ou structures publiques qui doivent sécuriser leurs données sensibles.
 - **Applications** : éditeurs SaaS ou solutions internes nécessitant des sauvegardes automatisées et restaurables rapidement.
 - **Utilisateurs particuliers** : développeurs indépendants, freelances ou étudiants qui veulent protéger leurs bases de test ou projets personnels.
@@ -43,38 +43,38 @@ La solution **SafeBase** s'adresse à plusieurs catégories de profils :
 
 - **Entreprise :**
     - **Contexte :**
-        Une PME de vente en ligne qui gère une base clients et une base de commandes.
+        Une PME de vente en ligne qui g�re une base clients et une base de commandes.
         
-    - **Problèmes rencontrés :**
-        - Sauvegardes trop longues à faire à la main.
+    - **Probl�mes rencontrés :**
+        - Sauvegardes trop longues � faire � la main.
         - Risque de perte de données en cas de panne.
         - Difficile de retrouver facilement les anciennes sauvegardes.
     - **Attentes :**
-        - Sauvegardes régulières sans intervention humaine.
+        - Sauvegardes réguli�res sans intervention humaine.
         - Un tableau de bord simple pour tout contrôler.
-        - Être averti si une sauvegarde échoue.
+        - �tre averti si une sauvegarde échoue.
 
 - **Organisation (association) :**
     - **Contexte :**
-        Une association qui gère ses adhérents et ses dons dans un outil informatique.
+        Une association qui g�re ses adhérents et ses dons dans un outil informatique.
         
-    - **Problèmes rencontrés :**
+    - **Probl�mes rencontrés :**
         - Peu de compétences techniques dans l'équipe.
-        - Dépendance à un prestataire externe pour les sauvegardes.
+        - Dépendance � un prestataire externe pour les sauvegardes.
         - Budget limité
     - **Attentes :**
-        - Interface facile à utiliser, même sans connaissances techniques.
+        - Interface facile � utiliser, m�me sans connaissances techniques.
         - Sauvegardes sécurisées et accessibles.
         - Solution économique et durable.
 
 - **Application :**
     - **Contexte :**
-        Une startup qui propose une application web à ses clients.
+        Une startup qui propose une application web � ses clients.
         
-    - **Problèmes rencontrés :**
+    - **Probl�mes rencontrés :**
         - Gérer différents types de bases de données.
         - Besoin de restaurer les données rapidement pour ne pas interrompre le service.
-        - Processus de sauvegarde compliqués à unifier.
+        - Processus de sauvegarde compliqués � unifier.
     - **Attentes :**
         - Pouvoir sauvegarder plusieurs types de bases.
         - Un outil adaptable et flexible.
@@ -84,14 +84,14 @@ La solution **SafeBase** s'adresse à plusieurs catégories de profils :
     - **Contexte :**
         Un développeur freelance qui travaille sur plusieurs projets web.
         
-    - **Problèmes rencontrés :**
-        - Sauvegardes dispersées, pas toujours régulières.
+    - **Probl�mes rencontrés :**
+        - Sauvegardes dispersées, pas toujours réguli�res.
         - Restauration compliquée quand un projet plante.
         - Pas de solution simple et centralisée.
     - **Attentes :**
         - Pouvoir lancer une sauvegarde ou une restauration facilement.
         - Automatiser les sauvegardes sans effort.
-        - Une solution simple à installer et légère à utiliser.
+        - Une solution simple � installer et lég�re � utiliser.
 
 #### Fonctionnalités principales
 
@@ -117,7 +117,7 @@ Liste de toutes les fonctionnalités prévues (MoSCoW) :
 - Historique des versions
 - Gestion des bases de données
 - Authentification
-- Système de Notification logs et alertes
+- Syst�me de Notification logs et alertes
 - Tests unitaires, d'intégration fonctionnels et end to end
 
 #### Benchmark : comparaison avec solutions existantes, forces/faiblesses
@@ -125,20 +125,20 @@ Liste de toutes les fonctionnalités prévues (MoSCoW) :
 - **Node.JS**
     - **Positif :**
         - Full JS (front et back)
-        - Rapide à développer
-        - Très gros écosystème
+        - Rapide � développer
+        - Tr�s gros écosyst�me
     - **Négatif :**
-        - Moins adapté aux tâches système
+        - Moins adapté aux tâches syst�me
         - Mono thread
         - Moins performant que Go
         - Typage plus souple
 
 - **Go**
     - **Positif :**
-        - Bonne gestion des tâches système
+        - Bonne gestion des tâches syst�me
         - Concurrence native (goroutines)
         - Compilation rapide, binaire léger
-        - Très utilisé en production (Docker, Kubernetes…)
+        - Tr�s utilisé en production (Docker, Kubernetes)
     - **Négatif :**
         - Syntaxe verbeuse
         - Moins d'abstractions que Node.js
@@ -150,7 +150,7 @@ Liste de toutes les fonctionnalités prévues (MoSCoW) :
         - Fort typage et contrôle strict
     - **Négatif :**
         - Moins d'outils clé-en-main
-        - Écosystème back-end encore jeune
+        - �cosyst�me back-end encore jeune
         - Courbe d'apprentissage raide
 
 Go est le compromis entre performances et simplicité
@@ -164,93 +164,93 @@ Go est le compromis entre performances et simplicité
 
 | **Semaine** | **Tâche** | **Détails** |
 | --- | --- | --- |
-| **S1** | Analyse et préparation | - Étude du cahier des charges<br>- Identification des personas<br>- Benchmark<br>- Préparation de l'environnement de dev (Docker, repos GitHub) |
+| **S1** | Analyse et préparation | - �tude du cahier des charges<br>- Identification des personas<br>- Benchmark<br>- Préparation de l'environnement de dev (Docker, repos GitHub) |
 | **S1** | Architecture technique | - Schéma global de l'architecture<br>- Diagramme Docker<br>- Diagramme de séquence pour MVP<br>- MCD et MLD des bases MySQL/PostgreSQL |
-| **S2** | Backend Go – Partie MVP | - Gestion des bases (ajout, suppression)<br>- Sauvegarde manuelle / restauration<br>- API REST pour le frontend<br>- Versioning des sauvegardes |
+| **S2** | Backend Go  Partie MVP | - Gestion des bases (ajout, suppression)<br>- Sauvegarde manuelle / restauration<br>- API REST pour le frontend<br>- Versioning des sauvegardes |
 | **S2** | Tests backend | - Tests unitaires des fonctions clés<br>- Tests de sauvegarde/restauration avec bases fictives |
 | **S3** | Frontend Vue.js | - Interface de contrôle basique (MVP)<br>- Formulaire ajout base, boutons sauvegarde/restauration<br>- Affichage de l'historique des sauvegardes<br>- Notifications simples |
-| **S3** | Intégration frontend ↔ backend | - Connexion API REST<br>- Tests manuels des fonctionnalités principales |
+| **S3** | Intégration frontend  backend | - Connexion API REST<br>- Tests manuels des fonctionnalités principales |
 | **S3** | Automatisation | - CRON pour sauvegardes automatiques<br>- Logs et notifications |
 | **S4** | Tests finaux et debug | - Tests fonctionnels complets<br>- Vérification multi-SGBD (MySQL/Postgres)<br>- Ajustements et corrections |
 | **S4** | Documentation et conception finale | - Wireframes et maquette finalisés<br>- Diagrammes UML et Docker finalisés<br>- Cahier des charges complété<br>- Rédaction des variables d'environnement et sécurité |
 | **S4** | Conteneurisation finale | - Docker Compose final (frontend + backend + MySQL + Postgres)<br>- Tests dans les conteneurs<br>- Préparation du dépôt GitHub public |
 | **S4** | Bilan et présentation | - Bilan du projet et perspectives d'évolution<br>- Bilan personnel<br>- Préparation soutenance / démo |
 
-#### Tableau Kanban : colonnes À faire, En cours, Terminé pour gestion des tâches
+#### Tableau Kanban : colonnes � faire, En cours, Terminé pour gestion des tâches
 GitHub Project
 
 #### Arborescence du projet : (dossiers backend, frontend, docker, tests)
 
 ```
 safebase/
-│── backend/                     # API REST en Go
-│   ├── cmd/                     # Point d'entrée (main.go)
-│   │   └── main.go
-│   ├── internal/                # Logique interne (clean architecture)
-│   │   ├── db/                  # Connexions à la DB (MySQL, Postgres, interne ⇒ contient du code)
-│   │   │   ├── mysql.go
-│   │   │   ├── postgres.go
-│   │   │   └── safebase.go      # Base interne (historique, logs)
-│   │   ├── services/            # Logique métier (sauvegarde, restauration)
-│   │   │   ├── backup.go
-│   │   │   ├── restore.go
-│   │   │   └── scheduler.go     # Gestion CRON
-│   │   ├── api/                 # Handlers HTTP (endpoints API REST)
-│   │   │   ├── backup_handler.go
-│   │   │   ├── restore_handler.go
-│   │   │   └── db_handler.go
-│   │   └── utils/               # Fonctions utilitaires (logs, sécurité…)
-│   │       ├── logger.go
-│   │       └── security.go
-│   ├── tests/                   # Tests unitaires backend
-│   │   ├── backup_test.go
-│   │   └── restore_test.go
-│   └── go.mod / go.sum
-│
-│── frontend/                    # Interface utilisateur Vue.js
-│   ├── public/                  # Ressources statiques
-│   ├── src/
-│   │   ├── assets/              # Images, icônes
-│   │   ├── components/          # Composants Vue.js
-│   │   │   ├── BackupList.vue
-│   │   │   ├── RestoreForm.vue
-│   │   │   └── AlertBox.vue
-│   │   ├── pages/               # Pages principales
-│   │   │   ├── Dashboard.vue
-│   │   │   └── History.vue
-│   │   ├── router/              # Routes Vue.js
-│   │   │   └── index.js
-│   │   ├── store/               # State management (Pinia/Vuex)
-│   │   │   └── backup.js
-│   │   └── App.vue
-│   └── package.json
-│
-│── docker/                      # Configurations Docker
-│   ├── Dockerfile.backend
-│   ├── Dockerfile.frontend
-│   ├── mysql_init.sql           # Script init MySQL (tests)
-│   ├── postgres_init.sql        # Script init PostgreSQL (tests)
-│   └── docker-compose.yml
-│
-│── db/                          # Sauvegardes et historique (contient les données)
-│   ├── backups/                 # Dossiers persistants de backup
-│   │   ├── mysql/
-│   │   └── postgresql/
-│   └── safebase.db              # SQLite interne (ou Postgres interne)
-│
-│── tests/                       # Tests d'intégration & e2e
-│   ├── integration/             # Tests API (Go + DB factices)
-│   └── e2e/                     # Tests bout en bout (frontend + backend)
-│
-│── docs/                        # Documentation du projet
-│   ├── cahier_des_charges.md
-│   ├── conception.md
-│   ├── architecture.png
-│   └── gantt.png
-│
-│── .env                         # Variables d'environnement
-│── .gitignore
-│── README.md                    # Présentation GitHub
+� backend/                     # API REST en Go
+�    cmd/                     # Point d'entrée (main.go)
+�   �    main.go
+�    internal/                # Logique interne (clean architecture)
+�   �    db/                  # Connexions � la DB (MySQL, Postgres, interne � contient du code)
+�   �   �    mysql.go
+�   �   �    postgres.go
+�   �   �    safebase.go      # Base interne (historique, logs)
+�   �    services/            # Logique métier (sauvegarde, restauration)
+�   �   �    backup.go
+�   �   �    restore.go
+�   �   �    scheduler.go     # Gestion CRON
+�   �    api/                 # Handlers HTTP (endpoints API REST)
+�   �   �    backup_handler.go
+�   �   �    restore_handler.go
+�   �   �    db_handler.go
+�   �    utils/               # Fonctions utilitaires (logs, sécurité)
+�   �        logger.go
+�   �        security.go
+�    tests/                   # Tests unitaires backend
+�   �    backup_test.go
+�   �    restore_test.go
+�    go.mod / go.sum
+�
+� frontend/                    # Interface utilisateur Vue.js
+�    public/                  # Ressources statiques
+�    src/
+�   �    assets/              # Images, icônes
+�   �    components/          # Composants Vue.js
+�   �   �    BackupList.vue
+�   �   �    RestoreForm.vue
+�   �   �    AlertBox.vue
+�   �    pages/               # Pages principales
+�   �   �    Dashboard.vue
+�   �   �    History.vue
+�   �    router/              # Routes Vue.js
+�   �   �    index.js
+�   �    store/               # State management (Pinia/Vuex)
+�   �   �    backup.js
+�   �    App.vue
+�    package.json
+�
+� docker/                      # Configurations Docker
+�    Dockerfile.backend
+�    Dockerfile.frontend
+�    mysql_init.sql           # Script init MySQL (tests)
+�    postgres_init.sql        # Script init PostgreSQL (tests)
+�    docker-compose.yml
+�
+� db/                          # Sauvegardes et historique (contient les données)
+�    backups/                 # Dossiers persistants de backup
+�   �    mysql/
+�   �    postgresql/
+�    safebase.db              # SQLite interne (ou Postgres interne)
+�
+� tests/                       # Tests d'intégration & e2e
+�    integration/             # Tests API (Go + DB factices)
+�    e2e/                     # Tests bout en bout (frontend + backend)
+�
+� docs/                        # Documentation du projet
+�    cahier_des_charges.md
+�    conception.md
+�    architecture.png
+�    gantt.png
+�
+� .env                         # Variables d'environnement
+� .gitignore
+� README.md                    # Présentation GitHub
 ```
 
 #### Wireframes : croquis des pages principales
@@ -268,13 +268,13 @@ safebase/
     Technologie de conteneurisation qui permet de créer des environnements isolés pour les applications.
     
 - **ORM :**
-    Object-Relational-Mapping, outil qui permet de **manipuler une base de données relationnelle** via des objets dans le code, plutôt que d'écrire directement des requêtes SQL.
+    Object-Relational-Mapping, outil qui permet de **manipuler une base de données relationnelle** via des objets dans le code, plutôt que d'écrire directement des requ�tes SQL.
     
 - **CRON job :**
-    Tâche automatique ****planifiée qui s'exécute à intervalles réguliers sur un système Unix/Linux.
+    Tâche automatique ****planifiée qui s'exécute � intervalles réguliers sur un syst�me Unix/Linux.
     
 - **Dump :**
-    Copie complète d'une base de données dans un fichier
+    Copie compl�te d'une base de données dans un fichier
     
 - **Pointer :**
 - **Channels :**
@@ -282,19 +282,19 @@ safebase/
 
 ### IV - Architecture technique
 
-#### Diagramme d'architecture logique : flux backend ↔ frontend ↔ bases (internes et externes)
+#### Diagramme d'architecture logique : flux backend  frontend  bases (internes et externes)
 
 ```
 [Utilisateur]
- │
-▼
-[Frontend Vue.js] ───> [Backend Go (API REST)]
- │                                             │
- │                                            ├──> [Base MySQL] (sauvegarde)
- │                                            ├──> [Base PostgreSQL] (sauvegarde)
- │                                            └──> [SafeBase DB interne] (historique, logs)
- │
-└──> [Docker Compose] orchestre tous les services
+ �
+��
+[Frontend Vue.js] > [Backend Go (API REST)]
+ �                                             �
+ �                                            > [Base MySQL] (sauvegarde)
+ �                                            > [Base PostgreSQL] (sauvegarde)
+ �                                            > [SafeBase DB interne] (historique, logs)
+ �
+> [Docker Compose] orchestre tous les services
 ```
 
 #### Diagramme de conteneur Docker : conteneurs backend, frontend, bases internes et clientes, volumes, réseau
@@ -303,8 +303,8 @@ safebase/
 +---------------- Docker Network safebase_net ----------------+
 |                                                             |
 |  [frontend]  Vue.js  <-->  [backend] Go API                |
-|                               │                             |
-|                              ▼                             |
+|                               �                             |
+|                              ��                             |
 |                     +-------------------------+             |
 |                     |   MySQL Container       |             |
 |                     +-------------------------+             |
@@ -320,20 +320,20 @@ safebase/
 
 ```
 Utilisateur       Frontend(Vue)      Backend(Go API)      DB cible (MySQL/Postgres)
-│                 │                  │                    │
-│   Clique "Backup" │                │                    │
-├————————->│                  │                    │
-│                 │   POST /backup   │                    │
-│                ├—————————->│                    │
-│                 │                  │  dump DB (mysqldump…)   │
-│                 │                 ├—————————————->│
-│                 │                  │                    │
-│                 │                  │   Retour OK + fichier   │
-│                 │                  │←—————————————┤
-│                 │   Réponse JSON   │                    │
-│                 │←—————————-┤                    │
-│   Notification OK │                  │                    │
-│←—————-———┤                  │                    │
+�                 �                  �                    �
+�   Clique "Backup" �                �                    �
+->�                  �                    �
+�                 �   POST /backup   �                    �
+�                ->�                    �
+�                 �                  �  dump DB (mysqldump)   �
+�                 �                 ->�
+�                 �                  �                    �
+�                 �                  �   Retour OK + fichier   �
+�                 �                  �
+�                 �   Réponse JSON   �                    �
+�                 �-                    �
+�   Notification OK �                  �                    �
+�-                  �                    �
 ```
 
 #### Description des technologies
@@ -353,7 +353,7 @@ Utilisateur       Frontend(Vue)      Backend(Go API)      DB cible (MySQL/Postgr
         - PostgreSQL
         - Interface : pgAdmin
         - ORM GORM
-    - **Base de données pouvant être sauvegardées :**
+    - **Base de données pouvant �tre sauvegardées :**
         - MySQL
         - PostgreSQL
         - SQLite (pour plus tard)
@@ -365,15 +365,15 @@ Utilisateur       Frontend(Vue)      Backend(Go API)      DB cible (MySQL/Postgr
     - Cypress
 - **Documentation et suivi de projet :**
     - Notion et README.md pour la documentation
-    - GitHub Project pour les tâches à réaliser
+    - GitHub Project pour les tâches � réaliser
     - Diagrammes UML
 
 #### Variables d'environnement et configuration
 
 ### V - Base de données (si utilisée)
 
-- MCD (Modèle Conceptuel de Données)
-- MLD (Modèle Logique de Données)
+- MCD (Mod�le Conceptuel de Données)
+- MLD (Mod�le Logique de Données)
 - Choix de l'ORM et justification
     - GORM
 
@@ -408,12 +408,12 @@ Utilisateur       Frontend(Vue)      Backend(Go API)      DB cible (MySQL/Postgr
 #### Tableau des scénarios :
 | Test | Description | Résultat attendu |
 
-#### Stratégie de tests alignée sur **cycle en V** : conception → implémentation → tests
+#### Stratégie de tests alignée sur **cycle en V** : conception  implémentation  tests
 
 ### IX - Déploiement et production
 
 - Docker Compose pour l'ensemble du projet
-- Scripts de démarrage / mise à jour
+- Scripts de démarrage / mise � jour
 - Déploiement sur serveur / cloud
 - Gestion des volumes persistants
 - Instructions pour production
@@ -425,7 +425,7 @@ Utilisateur       Frontend(Vue)      Backend(Go API)      DB cible (MySQL/Postgr
 - Gestion de projet professionnelle : GitHub Projects et Notion
 - Suivi des tâches et priorisation avec MoSCoW
 
-### XI - Problèmes rencontrés
+### XI - Probl�mes rencontrés
 
 - Difficultés techniques et solutions
 - Limitations rencontrées
@@ -434,7 +434,7 @@ Utilisateur       Frontend(Vue)      Backend(Go API)      DB cible (MySQL/Postgr
 ### XII - Bilan du projet et perspectives d'évolution
 
 - Fonctionnalités réalisées / non réalisées
-- Évolutions possibles : support NoSQL, notifications avancées, interface plus complète, sauvegarde cryptée, amélioration UX
+- �volutions possibles : support NoSQL, notifications avancées, interface plus compl�te, sauvegarde cryptée, amélioration UX
 
 ### XIII - Bilan personnel
 

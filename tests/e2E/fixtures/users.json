@@ -1,0 +1,41 @@
+{
+  "users": {
+    "validUser": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john.doe.e2e@test.com",
+      "password": "xK9#mQ2$vL7@wP4!nR8%"
+    },
+    "adminUser": {
+      "firstname": "Admin",
+      "lastname": "User",
+      "email": "admin.e2e@test.com",
+      "password": "AdminP@ssw0rd123"
+    },
+    "testUser1": {
+      "firstname": "Alice",
+      "lastname": "Smith",
+      "email": "alice.smith.e2e@test.com",
+      "password": "AliceP@ssw0rd123"
+    },
+    "testUser2": {
+      "firstname": "Bob",
+      "lastname": "Johnson",
+      "email": "bob.johnson.e2e@test.com",
+      "password": "BobP@ssw0rd123"
+    },
+    "invalidUser": {
+      "email": "invalid@test.com",
+      "password": "WrongPassword123"
+    }
+  },
+  "weakPasswords": [
+    "weak",
+    "12345678",
+    "password",
+    "NoSpecial123",
+    "nouppercas3!",
+    "NOLOWER123!"
+  ]
+}
+
