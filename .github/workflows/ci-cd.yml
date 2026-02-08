@@ -1,3 +1,4 @@
+# Name
 name: CI/CD Pipeline
 
 on:
@@ -155,62 +156,62 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
   # Job 3: Déploiement sur le serveur de production
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: https://safebase-r.fr
+  # deploy:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: github.ref == 'refs/heads/main'
+  #   environment:
+  #     name: production
+  #     url: https://safebase-r.fr
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          script: |
-            # Naviguer vers le répertoire de l'application
-            cd ${{ secrets.DEPLOY_PATH || '/opt/safebase' }}
+  #     - name: Deploy to server via SSH
+  #       uses: appleboy/ssh-action@v1.0.0
+  #       with:
+  #         host: ${{ secrets.DEPLOY_HOST }}
+  #         username: ${{ secrets.DEPLOY_USER }}
+  #         key: ${{ secrets.DEPLOY_SSH_KEY }}
+  #         port: ${{ secrets.DEPLOY_PORT || 22 }}
+  #         script: |
+  #           # Naviguer vers le répertoire de l'application
+  #           cd ${{ secrets.DEPLOY_PATH || '/opt/safebase' }}
             
-            # Sauvegarder la configuration actuelle
-            cp .env .env.backup
+  #           # Sauvegarder la configuration actuelle
+  #           cp .env .env.backup
             
-            # Pull les dernières images
-            docker-compose pull
+  #           # Pull les dernières images
+  #           docker-compose pull
             
-            # Arrêter les conteneurs actuels
-            docker-compose down
+  #           # Arrêter les conteneurs actuels
+  #           docker-compose down
             
-            # Démarrer les nouveaux conteneurs
-            docker-compose up -d
+  #           # Démarrer les nouveaux conteneurs
+  #           docker-compose up -d
             
-            # Nettoyer les anciennes images
-            docker image prune -af
+  #           # Nettoyer les anciennes images
+  #           docker image prune -af
             
-            # Vérifier que les services sont en cours d'exécution
-            docker-compose ps
+  #           # Vérifier que les services sont en cours d'exécution
+  #           docker-compose ps
             
-            echo "Déploiement terminé avec succès!"
+  #           echo "Déploiement terminé avec succès!"
 
-      - name: Health check
-        run: |
-          sleep 10
-          curl -f ${{ secrets.PRODUCTION_URL }}/health || exit 1
+  #     - name: Health check
+  #       run: |
+  #         sleep 10
+  #         curl -f ${{ secrets.PRODUCTION_URL }}/health || exit 1
 
-      - name: Notify deployment success
-        if: success()
-        run: echo "Déploiement réussi sur production!"
+  #     - name: Notify deployment success
+  #       if: success()
+  #       run: echo "Déploiement réussi sur production!"
 
-      - name: Notify deployment failure
-        if: failure()
-        run: echo "Échec du déploiement!"
+  #     - name: Notify deployment failure
+  #       if: failure()
+  #       run: echo "Échec du déploiement!"
 
   # # Job 4: Déploiement sur staging (optionnel)
   # deploy-staging:
