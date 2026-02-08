@@ -240,7 +240,7 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, name string, cron
 				"active":          schedule.Active,
 				"changes":         s.buildScheduleChanges(oldName, oldCronExpression, oldActive, schedule.Name, schedule.CronExpression, schedule.Active),
 			}
-			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
+			_ = s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
 		} else {
 			metadata := map[string]interface{}{
 				"schedule_id":     schedule.Id,
@@ -252,7 +252,7 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, name string, cron
 				"changes":         s.buildScheduleChanges(oldName, oldCronExpression, oldActive, schedule.Name, schedule.CronExpression, schedule.Active),
 			}
 			description := fmt.Sprintf("Planification modifiée pour la base de données '%s'", db.Name)
-			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
+			_ = s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 		}
 	}
 
@@ -335,7 +335,7 @@ func (s *ScheduleService) DeleteSchedule(id uint, userID uint, ipAddress string,
 			"active":          schedule.Active,
 		}
 		description := fmt.Sprintf("Planification supprimée pour la base de données '%s' (%s)", db.Name, schedule.CronExpression)
-		s.actionHistoryService.LogAction(userID, "delete", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
+		_ = s.actionHistoryService.LogAction(userID, "delete", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return nil
