@@ -40,10 +40,17 @@ RUN apk add --no-cache \
     libstdc++ \
     libgcc
 
-# Installer Go 1.25 manuellement
-RUN wget https://go.dev/dl/go1.25.0.linux-arm64.tar.gz && \
-    tar -C /usr/local -xzf go1.25.0.linux-arm64.tar.gz && \
-    rm go1.25.0.linux-arm64.tar.gz
+# Installer Go 1.25 manuellement (détection automatique de l'architecture)
+ARG TARGETARCH
+RUN case ${TARGETARCH} in \
+    "amd64") ARCH="amd64" ;; \
+    "arm64") ARCH="arm64" ;; \
+    "arm") ARCH="armv6l" ;; \
+    *) ARCH="amd64" ;; \
+    esac && \
+    wget https://go.dev/dl/go1.25.0.linux-${ARCH}.tar.gz && \
+    tar -C /usr/local -xzf go1.25.0.linux-${ARCH}.tar.gz && \
+    rm go1.25.0.linux-${ARCH}.tar.gz
 
 # Ajouter Go au PATH
 ENV PATH="/usr/local/go/bin:${PATH}"
