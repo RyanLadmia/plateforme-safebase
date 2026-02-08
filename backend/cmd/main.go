@@ -20,7 +20,7 @@ import (
 
 func main() {
 	// Load config from environment variables
-
+	cfg := config.LoadConfig()
 	// Connection to PostgreSQL database
 	database := db.ConnectPostgres(cfg)
 
