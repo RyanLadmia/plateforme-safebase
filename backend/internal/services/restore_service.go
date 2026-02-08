@@ -338,7 +338,7 @@ func (s *RestoreService) CreateRestore(backupID uint, databaseID uint, userID ui
 			"status":        restore.Status,
 		}
 		description := fmt.Sprintf("Restauration effectuée - Sauvegarde '%s' vers base de données '%s'", backup.Filename, database.Name)
-		s.actionHistoryService.LogAction(userID, "restored", "restore", restore.Id, description, metadata, ipAddress, userAgent)
+		_ = s.actionHistoryService.LogAction(userID, "restored", "restore", restore.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return restore, nil

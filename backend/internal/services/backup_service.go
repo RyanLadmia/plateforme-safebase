@@ -885,7 +885,7 @@ func (s *BackupService) DownloadBackupWithLogging(id uint, userID uint, ipAddres
 					"filepath":      backup.Filepath,
 				}
 				description := fmt.Sprintf("Sauvegarde '%s' téléchargée (Base de données: %s)", backup.Filename, database.Name)
-				s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, description, metadata, ipAddress, userAgent)
+				_ = s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, description, metadata, ipAddress, userAgent)
 			}
 		}
 	}

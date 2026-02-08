@@ -152,7 +152,7 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, name stri
 			"active":          schedule.Active,
 		}
 		description := fmt.Sprintf("Planification créée pour la base de données '%s' (%s)", db.Name, schedule.CronExpression)
-		s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
+		_ = s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return schedule, nil
