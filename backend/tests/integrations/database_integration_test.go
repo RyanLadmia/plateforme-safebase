@@ -23,11 +23,11 @@ func setupDatabaseServices(db *gorm.DB) (*services.DatabaseService, *services.Ac
 	restoreRepo := repositories.NewRestoreRepository(db)
 	scheduleRepo := repositories.NewScheduleRepository(db)
 	historyRepo := repositories.NewActionHistoryRepository(db)
-	
+
 	databaseService := services.NewDatabaseService(databaseRepo, backupRepo, restoreRepo, scheduleRepo, nil)
 	historyService := services.NewActionHistoryService(historyRepo)
 	databaseService.SetActionHistoryService(historyService)
-	
+
 	return databaseService, historyService, databaseRepo
 }
 
@@ -150,7 +150,7 @@ func TestIntegration_DatabaseCRUDFlow(t *testing.T) {
 		// Verify action was logged
 		histories, _, err := historyService.GetUserActionHistory(user.Id, 1, 10)
 		require.NoError(t, err, "Should retrieve action history")
-		
+
 		// Find delete action
 		var deleteFound bool
 		for _, h := range histories {
@@ -250,9 +250,10 @@ func TestIntegration_MultipleDatabasesPerUser(t *testing.T) {
 	mysqlCount := 0
 	postgresCount := 0
 	for _, db := range userDatabases {
-		if db.Type == "mysql" {
+		switch db.Type {
+		case "mysql":
 			mysqlCount++
-		} else if db.Type == "postgresql" {
+		case "postgresql":
 			postgresCount++
 		}
 	}
@@ -267,7 +268,7 @@ func TestIntegration_DatabaseAccessControl(t *testing.T) {
 
 	// Create two users
 	user1 := createTestUser(db)
-	
+
 	roleID := uint(2)
 	user2 := &models.User{
 		Firstname: "Another",
@@ -307,4 +308,3 @@ func TestIntegration_DatabaseAccessControl(t *testing.T) {
 	require.NoError(t, err, "Should retrieve user2 databases")
 	assert.Equal(t, 0, len(user2Databases), "User 2 should have no databases")
 }
-

@@ -133,7 +133,10 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, name stri
 	})
 	if err != nil {
 		// If adding to cron fails, delete the schedule from DB
-		s.scheduleRepo.Delete(schedule.Id)
+		if deleteErr := s.scheduleRepo.Delete(schedule.Id); deleteErr != nil {
+			// Log the error but don't fail the operation
+			fmt.Printf("Warning: failed to delete schedule after cron error: %v\n", deleteErr)
+		}
 		return nil, fmt.Errorf("erreur lors de l'ajout de la tâche cron: %v", err)
 	}
 	s.jobs[schedule.Id] = jobID
@@ -149,7 +152,7 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, name stri
 			"active":          schedule.Active,
 		}
 		description := fmt.Sprintf("Planification créée pour la base de données '%s' (%s)", db.Name, schedule.CronExpression)
-		s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
+		_ = s.actionHistoryService.LogAction(userID, "create", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return schedule, nil
@@ -237,7 +240,7 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, name string, cron
 				"active":          schedule.Active,
 				"changes":         s.buildScheduleChanges(oldName, oldCronExpression, oldActive, schedule.Name, schedule.CronExpression, schedule.Active),
 			}
-			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
+			_ = s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, "Planification modifiée", metadata, ipAddress, userAgent)
 		} else {
 			metadata := map[string]interface{}{
 				"schedule_id":     schedule.Id,
@@ -249,7 +252,7 @@ func (s *ScheduleService) UpdateSchedule(id uint, userID uint, name string, cron
 				"changes":         s.buildScheduleChanges(oldName, oldCronExpression, oldActive, schedule.Name, schedule.CronExpression, schedule.Active),
 			}
 			description := fmt.Sprintf("Planification modifiée pour la base de données '%s'", db.Name)
-			s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
+			_ = s.actionHistoryService.LogAction(userID, "update", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 		}
 	}
 
@@ -332,7 +335,7 @@ func (s *ScheduleService) DeleteSchedule(id uint, userID uint, ipAddress string,
 			"active":          schedule.Active,
 		}
 		description := fmt.Sprintf("Planification supprimée pour la base de données '%s' (%s)", db.Name, schedule.CronExpression)
-		s.actionHistoryService.LogAction(userID, "delete", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
+		_ = s.actionHistoryService.LogAction(userID, "delete", "schedule", schedule.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return nil

@@ -249,7 +249,10 @@ func (s *RestoreService) restorePostgreSQL(database *models.Database, backupData
 func (s *RestoreService) updateRestoreError(restoreID uint) {
 	// For now, we'll just update the status to failed
 	// In the future, we might want to add an error_msg field to the Restore model
-	s.restoreRepo.UpdateStatus(restoreID, "failed")
+	if err := s.restoreRepo.UpdateStatus(restoreID, "failed"); err != nil {
+		// Log the error but don't fail the operation
+		fmt.Printf("Warning: failed to update restore status: %v\n", err)
+	}
 }
 
 // GetRestoresByUser returns all restores for a user
@@ -335,7 +338,7 @@ func (s *RestoreService) CreateRestore(backupID uint, databaseID uint, userID ui
 			"status":        restore.Status,
 		}
 		description := fmt.Sprintf("Restauration effectuée - Sauvegarde '%s' vers base de données '%s'", backup.Filename, database.Name)
-		s.actionHistoryService.LogAction(userID, "restored", "restore", restore.Id, description, metadata, ipAddress, userAgent)
+		_ = s.actionHistoryService.LogAction(userID, "restored", "restore", restore.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return restore, nil

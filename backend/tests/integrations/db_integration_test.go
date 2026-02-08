@@ -10,19 +10,49 @@ import (
 	"gorm.io/gorm"
 )
 
-// TestIntegration_ConnectPostgres : connects to the real PostgreSQL database using .env
+// TestIntegration_ConnectPostgres : connects to the real PostgreSQL database using .env or environment variables
 func TestIntegration_ConnectPostgres(t *testing.T) {
-	// Load .env file
-	if err := godotenv.Load("../../.env"); err != nil {
-		t.Fatalf("Failed to load .env file: %v\n", err)
-	}
+	// Try to load .env file (for local development), but don't fail if it doesn't exist
+	_ = godotenv.Load("../../.env")
 
-	// Read environment variables
+	// Read environment variables (from .env or CI/CD environment)
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
+
+	// If variables are not set, try to use PostgreSQL service variables from CI/CD
+	if host == "" {
+		host = os.Getenv("POSTGRES_HOST")
+		if host == "" {
+			host = "localhost"
+		}
+	}
+	if port == "" {
+		port = os.Getenv("POSTGRES_PORT")
+		if port == "" {
+			port = "5432"
+		}
+	}
+	if user == "" {
+		user = os.Getenv("POSTGRES_USER")
+		if user == "" {
+			user = "testuser"
+		}
+	}
+	if password == "" {
+		password = os.Getenv("POSTGRES_PASSWORD")
+		if password == "" {
+			password = "testpassword"
+		}
+	}
+	if dbname == "" {
+		dbname = os.Getenv("POSTGRES_DB")
+		if dbname == "" {
+			dbname = "testdb"
+		}
+	}
 
 	// Build DSN
 	dsn := fmt.Sprintf(

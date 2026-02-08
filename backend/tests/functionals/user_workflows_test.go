@@ -135,7 +135,7 @@ func (ts *TestSuite) Cleanup(t *testing.T) {
 
 	// Delete sessions
 	for _, token := range ts.createdSessions {
-		ts.SessionRepo.DeleteByToken(token)
+		_ = ts.SessionRepo.DeleteByToken(token)
 	}
 	t.Logf("Cleaned %d sessions", len(ts.createdSessions))
 

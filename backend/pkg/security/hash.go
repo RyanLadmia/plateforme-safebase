@@ -31,7 +31,7 @@ func CheckPassword(hashedPassword, plainPassword string) bool {
 	return err == nil // true = password is correct
 }
 
-// EncryptDatabasePassword encrypts a database password using AES
+// EncryptDatabasePassword encrypts a database password using AES-GCM (AEAD mode)
 func EncryptDatabasePassword(password string) (string, error) {
 	// In production, this key should come from environment variables
 	key := []byte("your-32-byte-secret-key-here!!!!") // 32 bytes for AES-256
@@ -41,21 +41,22 @@ func EncryptDatabasePassword(password string) (string, error) {
 		return "", err
 	}
 
-	plaintext := []byte(password)
-	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-	iv := ciphertext[:aes.BlockSize]
-
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
 		return "", err
 	}
 
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+	plaintext := []byte(password)
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
 
+	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-// DecryptDatabasePassword decrypts a database password using AES
+// DecryptDatabasePassword decrypts a database password using AES-GCM (AEAD mode)
 func DecryptDatabasePassword(encryptedPassword string) (string, error) {
 	// In production, this key should come from environment variables
 	key := []byte("your-32-byte-secret-key-here!!!!") // 32 bytes for AES-256
@@ -70,15 +71,21 @@ func DecryptDatabasePassword(encryptedPassword string) (string, error) {
 		return "", err
 	}
 
-	if len(ciphertext) < aes.BlockSize {
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonceSize := aesGCM.NonceSize()
+	if len(ciphertext) < nonceSize {
 		return "", fmt.Errorf("ciphertext too short")
 	}
 
-	iv := ciphertext[:aes.BlockSize]
-	ciphertext = ciphertext[aes.BlockSize:]
+	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", err
+	}
 
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(ciphertext, ciphertext)
-
-	return string(ciphertext), nil
+	return string(plaintext), nil
 }

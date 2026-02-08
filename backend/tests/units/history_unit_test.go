@@ -111,7 +111,8 @@ func TestActionHistoryService_LogAction(t *testing.T) {
 
 	// Verify metadata was stored as JSON
 	var storedMetadata map[string]interface{}
-	json.Unmarshal([]byte(history.Metadata), &storedMetadata)
+	err = json.Unmarshal([]byte(history.Metadata), &storedMetadata)
+	assert.NoError(t, err, "Should unmarshal metadata successfully")
 	assert.Equal(t, "Test Database", storedMetadata["database_name"], "Metadata should be stored correctly")
 }
 
@@ -173,7 +174,7 @@ func TestActionHistoryService_GetActionHistoryByType(t *testing.T) {
 	}
 
 	// Get history for backup resource type
-	histories, total, err = historyService.GetActionHistoryByType("backup", 1, 10)
+	_, total, err = historyService.GetActionHistoryByType("backup", 1, 10)
 	assert.NoError(t, err, "Should retrieve backup history successfully")
 	assert.Equal(t, int64(1), total, "Total should be 1 for backup type")
 }
@@ -232,7 +233,7 @@ func TestActionHistoryService_GetUserActionHistoryByType(t *testing.T) {
 	}
 
 	// Get backup history for user 1
-	histories, total, err = historyService.GetUserActionHistoryByType(1, "backup", 1, 10)
+	_, total, err = historyService.GetUserActionHistoryByType(1, "backup", 1, 10)
 	assert.NoError(t, err, "Should retrieve backup history successfully")
 	assert.Equal(t, int64(2), total, "Total should be 2 backup entries")
 }
