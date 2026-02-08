@@ -130,7 +130,9 @@ func main() {
 	// Configure the Gin server
 	gin.SetMode(gin.ReleaseMode)
 	server := gin.Default()
-	server.SetTrustedProxies([]string{"127.0.0.1"})
+	if err := server.SetTrustedProxies([]string{"127.0.0.1"}); err != nil {
+		log.Fatalf("Failed to set trusted proxies: %v", err)
+	}
 
 	// Secure CORS middleware to allow cookies
 	server.Use(utils.CORSMiddleware())

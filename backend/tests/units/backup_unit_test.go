@@ -9,6 +9,7 @@ import (
 	"github.com/RyanLadmia/plateforme-safebase/internal/services"
 	"github.com/RyanLadmia/plateforme-safebase/pkg/security"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -232,7 +233,8 @@ func TestBackupService_DownloadBackup(t *testing.T) {
 	
 	// Create a temporary file to encrypt
 	tmpFile := "/tmp/test_backup_data.txt"
-	os.WriteFile(tmpFile, testData, 0644)
+	err := os.WriteFile(tmpFile, testData, 0644)
+	require.NoError(t, err, "Should write test file successfully")
 	defer os.Remove(tmpFile)
 	
 	encryptedData, _ := encryptionService.EncryptFile(tmpFile)

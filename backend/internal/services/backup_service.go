@@ -663,7 +663,10 @@ func (s *BackupService) dumpPostgreSQL(database *models.Database, outputDir stri
 
 // updateBackupError updates backup status to failed with error message
 func (s *BackupService) updateBackupError(backupID uint, errorMsg string) {
-	s.backupRepo.UpdateStatus(backupID, "failed", errorMsg)
+	if err := s.backupRepo.UpdateStatus(backupID, "failed", errorMsg); err != nil {
+		// Log the error but don't fail the operation
+		fmt.Printf("Warning: failed to update backup status: %v\n", err)
+	}
 }
 
 // GetBackupsByUser returns all backups for a user
@@ -792,7 +795,7 @@ func (s *BackupService) CreateBackup(databaseID uint, userID uint, ipAddress str
 			"filepath":      backup.Filepath,
 		}
 		description := fmt.Sprintf("Sauvegarde '%s' créée (Base de données: %s)", backup.Filename, database.Name)
-		s.actionHistoryService.LogAction(userID, "create", "backup", backup.Id, description, metadata, ipAddress, userAgent)
+		_ = s.actionHistoryService.LogAction(userID, "create", "backup", backup.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return backup, nil
@@ -843,7 +846,7 @@ func (s *BackupService) DeleteBackupWithLogging(id uint, userID uint, ipAddress 
 			"filepath":      backup.Filepath,
 		}
 		description := fmt.Sprintf("Sauvegarde '%s' supprimée (Base de données: %s)", backup.Filename, database.Name)
-		s.actionHistoryService.LogAction(userID, "delete", "backup", backup.Id, description, metadata, ipAddress, userAgent)
+		_ = s.actionHistoryService.LogAction(userID, "delete", "backup", backup.Id, description, metadata, ipAddress, userAgent)
 	}
 
 	return nil
@@ -871,7 +874,7 @@ func (s *BackupService) DownloadBackupWithLogging(id uint, userID uint, ipAddres
 					"size":        backup.Size,
 					"filepath":    backup.Filepath,
 				}
-				s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, "Sauvegarde téléchargée", metadata, ipAddress, userAgent)
+				_ = s.actionHistoryService.LogAction(userID, "download", "backup", backup.Id, "Sauvegarde téléchargée", metadata, ipAddress, userAgent)
 			} else {
 				metadata := map[string]interface{}{
 					"backup_id":     backup.Id,

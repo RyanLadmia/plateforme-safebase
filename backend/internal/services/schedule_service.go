@@ -133,7 +133,10 @@ func (s *ScheduleService) CreateSchedule(databaseID uint, userID uint, name stri
 	})
 	if err != nil {
 		// If adding to cron fails, delete the schedule from DB
-		s.scheduleRepo.Delete(schedule.Id)
+		if deleteErr := s.scheduleRepo.Delete(schedule.Id); deleteErr != nil {
+			// Log the error but don't fail the operation
+			fmt.Printf("Warning: failed to delete schedule after cron error: %v\n", deleteErr)
+		}
 		return nil, fmt.Errorf("erreur lors de l'ajout de la tâche cron: %v", err)
 	}
 	s.jobs[schedule.Id] = jobID
