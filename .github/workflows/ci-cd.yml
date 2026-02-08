@@ -100,14 +100,14 @@ jobs:
         if: failure()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"text": "❌ Echec d'un push/pull request CI sur safebase ! ❌"}' \
+          -d "{\"text\": \"❌ Échec d'un push/pull request CI sur safebase ! ❌\"}" \
           ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
 
-      - name: Notify Google chat - CI Succes
+      - name: Notify Google chat - CI Success
         if: success()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"text": "✅ Succès d'un push/pull request CI sur safebase ! ✅"}' \
+          -d "{\"text\": \"✅ Succès d'un push/pull request CI sur safebase ! ✅\"}" \
           ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
 
   # Job 2: Build et push des images Docker
@@ -115,7 +115,7 @@ jobs:
     name: Build Docker Images
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout code
@@ -179,14 +179,14 @@ jobs:
         if: success()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"text":"✅ Build et push Docker terminés avec succès ! ✅"}' \
+          -d "{\"text\":\"✅ Build et push Docker terminés avec succès ! ✅\"}" \
           ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
         
       - name: Notify Google Chat - Build Failure
         if: failure()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"text":"❌ Échec du build ou push Docker sur DockerHub ! ❌"}' \
+          -d "{\"text\":\"❌ Échec du build ou push Docker sur DockerHub ! ❌\"}" \
           ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
 
   # Job 3: Déploiement sur le serveur de production
@@ -243,12 +243,12 @@ jobs:
   #       if: success()
   #       run: |
   #         curl -X POST -H "Content-Type: application/json" \
-  #         -d '{"text":"✅ Tous les tests backend et frontend sont passés sur '${GITHUB_REF}' !"}' \
+  #         -d "{\"text\":\"✅ Tous les tests backend et frontend sont passés sur '${GITHUB_REF}' !\"}" \
   #         ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
 
   #     - name: Notify Google Chat - Tests Failure
   #       if: failure()
   #       run: |
   #         curl -X POST -H "Content-Type: application/json" \
-  #         -d '{"text":"❌ Échec d’un test sur '${GITHUB_REF}' !"}' \
+  #         -d "{\"text\":\"❌ Échec d’un test sur '${GITHUB_REF}' !\"}" \
   #         ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
