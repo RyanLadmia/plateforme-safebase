@@ -16,8 +16,11 @@ Allez dans `Settings > Secrets and variables > Actions` de votre repository GitH
 ### Secrets Docker Hub (obligatoires)
 
 ```
-DOCKER_USERNAME     # Votre nom d'utilisateur Docker Hub
-DOCKER_PASSWORD     # Votre mot de passe ou token Docker Hub
+DOCKERHUB_USERNAME       # Votre nom d'utilisateur Docker Hub
+DOCKERHUB_TOKEN          # Votre token Docker Hub
+DOCKER_REGISTRY          # docker.io (par défaut)
+DOCKERHUB_REPO           # Nom de votre repository dockerhub
+GOOGLE_CHAT_WEBHOOK      # URl du google chat fourni (webhooks)
 ```
 
 ### Secrets de déploiement Production (obligatoires pour le déploiement)
@@ -111,11 +114,13 @@ git clone https://github.com/votre-username/plateforme-safebase.git .
 ### 3. Configurer les variables d'environnement
 
 ```bash
-# Créer le fichier .env
+# Créer le fichier .env (un dans le dossier frontend et un dans le dossier backend)
 nano .env
 ```
 
 Ajoutez vos variables d'environnement :
+
+backend/.env
 
 ```env
 # Base de données PostgreSQL
@@ -138,6 +143,8 @@ JWT_SECRET=votre_secret_jwt_tres_long_et_securise
 MEGA_EMAIL=votre_email@mega.nz
 MEGA_PASSWORD=votre_mot_de_passe_mega
 ENCRYPTION_KEY=votre_cle_de_chiffrement_32_caracteres
+
+frontend/.env :
 
 # Frontend
 VITE_API_URL=https://api.votre-domaine.com
@@ -345,14 +352,8 @@ docker pull votre-username/safebase-backend:latest
 
 ##  Notes
 
-- Le pipeline s'exécute automatiquement à chaque push sur `main` ou `develop`
+- Le pipeline s'exécute automatiquement à chaque push sur `main`
 - Les images Docker sont multi-architecture (amd64 et arm64)
 - Les anciennes images sont automatiquement nettoyées après déploiement
-- Un backup de `.env` est créé avant chaque déploiement
 
-##  Ressources
-
-- [Documentation Docker](https://docs.docker.com/)
-- [Documentation GitHub Actions](https://docs.github.com/en/actions)
-- [Documentation Docker Compose](https://docs.docker.com/compose/)
 
