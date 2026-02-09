@@ -114,11 +114,13 @@ git clone https://github.com/votre-username/plateforme-safebase.git .
 ### 3. Configurer les variables d'environnement
 
 ```bash
-# Créer le fichier .env
+# Créer le fichier .env (un dans le dossier frontend et un dans le dossier backend)
 nano .env
 ```
 
 Ajoutez vos variables d'environnement :
+
+backend/.env
 
 ```env
 # Base de données PostgreSQL
@@ -141,6 +143,8 @@ JWT_SECRET=votre_secret_jwt_tres_long_et_securise
 MEGA_EMAIL=votre_email@mega.nz
 MEGA_PASSWORD=votre_mot_de_passe_mega
 ENCRYPTION_KEY=votre_cle_de_chiffrement_32_caracteres
+
+frontend/.env :
 
 # Frontend
 VITE_API_URL=https://api.votre-domaine.com
